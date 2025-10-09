@@ -1,0 +1,58 @@
+<!-- ============================================ -->
+<!-- 9. lista_cargas.html -->
+<!-- Guardar en: accounts/templates/accounts/lista_cargas.html -->
+<!-- ============================================ -->
+{% extends 'base.html' %}
+
+{% block title %}Cargas Masivas - NUAM{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: #667eea;">Cargas Masivas</h1>
+        <a href="{% url 'accounts:nueva_carga' %}" class="btn btn-primary">+ Nueva Carga</a>
+    </div>
+    
+    {% if cargas %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 1rem; text-align: left;">Tipo</th>
+                    <th style="padding: 1rem; text-align: left;">Archivo</th>
+                    <th style="padding: 1rem; text-align: center;">Procesados</th>
+                    <th style="padding: 1rem; text-align: center;">Exitosos</th>
+                    <th style="padding: 1rem; text-align: center;">Fallidos</th>
+                    <th style="padding: 1rem; text-align: left;">Fecha</th>
+                    <th style="padding: 1rem; text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for carga in cargas %}
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 1rem;">
+                        <span style="background: #667eea; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
+                            {{ carga.tipo_carga }}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem;">{{ carga.nombre_archivo }}</td>
+                    <td style="padding: 1rem; text-align: center; font-weight: 600;">{{ carga.registros_procesados }}</td>
+                    <td style="padding: 1rem; text-align: center; color: #28a745; font-weight: 600;">{{ carga.registros_exitosos }}</td>
+                    <td style="padding: 1rem; text-align: center; color: #dc3545; font-weight: 600;">{{ carga.registros_fallidos }}</td>
+                    <td style="padding: 1rem;">{{ carga.fecha_carga|date:"d/m/Y H:i" }}</td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <a href="{% url 'accounts:detalle_carga' carga.pk %}" style="color: #667eea; text-decoration: none;">👁️ Ver detalle</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem;">
+        <p style="font-size: 1.2rem; color: #999; margin-bottom: 1rem;">No hay cargas registradas</p>
+        <a href="{% url 'accounts:nueva_carga' %}" class="btn btn-primary">Realizar primera carga</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

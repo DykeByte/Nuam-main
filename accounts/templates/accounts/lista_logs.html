@@ -1,0 +1,117 @@
+<!-- ============================================ -->
+<!-- 12. lista_logs.html -->
+<!-- Guardar en: accounts/templates/accounts/lista_logs.html -->
+<!-- ============================================ -->
+{% extends 'base.html' %}
+
+{% block title %}Logs de Operaciones - NUAM{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="color: #667eea; margin-bottom: 2rem;">Historial de Operaciones</h1>
+    
+    {% if logs %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 1rem; text-align: left;">Operación</th>
+                    <th style="padding: 1rem; text-align: left;">Usuario</th>
+                    <th style="padding: 1rem; text-align: left;">Fecha y Hora</th>
+                    <th style="padding: 1rem; text-align: left;">IP</th>
+                    <th style="padding: 1rem; text-align: center;">Detalles</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 1rem;">
+                        {% if log.operacion == 'CREATE' %}
+                            <span style="background: #28a745; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
+                                ➕ {{ log.get_operacion_display }}
+                            </span>
+                        {% elif log.operacion == 'UPDATE' %}
+                            <span style="background: #ffc107; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
+                                ✏️ {{ log.get_operacion_display }}
+                            </span>
+                        {% elif log.operacion == 'DELETE' %}
+                            <span style="background: #dc3545; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
+                                🗑️ {{ log.get_operacion_display }}
+                            </span>
+                        {% else %}
+                            <span style="background: #667eea; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
+                                📤 {{ log.get_operacion_display }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem;">{{ log.usuario.username }}</td>
+                    <td style="padding: 1rem;">{{ log.fecha_hora|date:"d/m/Y H:i:s" }}</td>
+                    <td style="padding: 1rem; font-family: monospace;">{{ log.ip_address|default:"N/A" }}</td>
+                    <td style="padding: 1rem; text-align: center;">
+                        <button onclick="toggleDetails('log-{{ log.id }}')" 
+                            style="background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline;">
+                            Ver detalles
+                        </button>
+                    </td>
+                </tr>
+                <tr id="log-{{ log.id }}" style="display: none;">
+                    <td colspan="5" style="padding: 1.5rem; background: #f8f9fa;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            {% if log.datos_anteriores %}
+                            <div>
+                                <h4 style="color: #dc3545; margin-bottom: 0.5rem;">📋 Datos Anteriores</h4>
+                                <pre style="background: white; padding: 1rem; border-radius: 5px; overflow-x: auto; margin: 0;">{{ log.datos_anteriores|safe }}</pre>
+                            </div>
+                            {% endif %}
+                            
+                            {% if log.datos_nuevos %}
+                            <div>
+                                <h4 style="color: #28a745; margin-bottom: 0.5rem;">📋 Datos Nuevos</h4>
+                                <pre style="background: white; padding: 1rem; border-radius: 5px; overflow-x: auto; margin: 0;">{{ log.datos_nuevos|safe }}</pre>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if log.calificacion %}
+                        <div style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 5px;">
+                            <strong>Calificación relacionada:</strong> 
+                            <a href="{% url 'accounts:detalle_calificacion' log.calificacion.pk %}" 
+                                style="color: #667eea; text-decoration: none;">
+                                {{ log.calificacion.instrumento|default:"Ver detalles" }}
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if log.carga_masiva %}
+                        <div style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 5px;">
+                            <strong>Carga masiva relacionada:</strong> 
+                            <a href="{% url 'accounts:detalle_carga' log.carga_masiva.pk %}" 
+                                style="color: #667eea; text-decoration: none;">
+                                {{ log.carga_masiva.nombre_archivo }}
+                            </a>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem;">
+        <p style="font-size: 1.2rem; color: #999;">No hay operaciones registradas</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function toggleDetails(id) {
+        const element = document.getElementById(id);
+        if (element.style.display === 'none') {
+            element.style.display = 'table-row';
+        } else {
+            element.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

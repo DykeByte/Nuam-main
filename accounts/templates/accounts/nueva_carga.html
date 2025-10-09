@@ -1,0 +1,75 @@
+<!-- ============================================ -->
+<!-- 10. nueva_carga.html -->
+<!-- Guardar en: accounts/templates/accounts/nueva_carga.html -->
+<!-- ============================================ -->
+{% extends 'base.html' %}
+
+{% block title %}Nueva Carga - NUAM{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h1 style="color: #667eea; margin-bottom: 2rem;">Nueva Carga Masiva</h1>
+
+    <!-- Tasas de divisas fijas -->
+    <div style="margin-bottom: 2rem; padding: 1rem; background: #f1f1f1; border-radius: 5px;">
+        <h3>Tasas de Cambio (CLP)</h3>
+        <ul style="list-style: none; padding: 0; display: flex; gap: 1rem;">
+            {% for moneda, valor in tasas_divisas.items %}
+                <li><strong>{{ moneda }}:</strong> {{ valor }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 2rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Tipo de Carga</label>
+            <select name="tipo_carga" required
+                style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;">
+                <option value="">Selecciona un tipo</option>
+                <option value="FACTORES">Factores</option>
+                <option value="MONITOR">Monitor</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom: 2rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Archivo (Excel o CSV)</label>
+            <div style="border: 2px dashed #667eea; border-radius: 10px; padding: 3rem; text-align: center; background: #f8f9fa;">
+                <input type="file" name="archivo" accept=".xlsx,.xls,.csv" required
+                    style="display: none;" id="fileInput">
+                <label for="fileInput" style="cursor: pointer;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+                    <p style="color: #667eea; font-weight: 600; margin-bottom: 0.5rem;">Haz click para seleccionar archivo</p>
+                    <p style="color: #999; font-size: 0.9rem;">Formatos aceptados: .xlsx, .xls, .csv</p>
+                </label>
+                <div id="fileName" style="margin-top: 1rem; color: #28a745; font-weight: 600;"></div>
+            </div>
+        </div>
+        
+        <div style="background: #d1ecf1; padding: 1.5rem; border-radius: 5px; border-left: 4px solid #17a2b8; margin-bottom: 2rem;">
+            <h3 style="color: #0c5460; margin-bottom: 0.5rem;">ℹ️ Instrucciones</h3>
+            <ul style="color: #0c5460; margin: 0; padding-left: 1.5rem;">
+                <li>El archivo debe contener las columnas correspondientes al tipo de carga</li>
+                <li>Los datos serán validados automáticamente</li>
+                <li>Recibirás un reporte detallado de la carga</li>
+            </ul>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary">Subir y Procesar</button>
+            <a href="{% url 'accounts:lista_cargas' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        const fileNameDiv = document.getElementById('fileName');
+        if (fileName) {
+            fileNameDiv.textContent = '✓ Archivo seleccionado: ' + fileName;
+        }
+    });
+</script>
+{% endblock %}

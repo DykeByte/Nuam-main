@@ -1,0 +1,30 @@
+<!-- ============================================ -->
+<!-- 8. eliminar_calificacion.html -->
+<!-- Guardar en: accounts/templates/accounts/eliminar_calificacion.html -->
+<!-- ============================================ -->
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Calificación - NUAM{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 2rem auto;">
+    <h1 style="color: #dc3545; margin-bottom: 2rem;">⚠️ Eliminar Calificación</h1>
+    
+    <div style="background: #f8d7da; padding: 1.5rem; border-radius: 5px; border-left: 4px solid #dc3545; margin-bottom: 2rem;">
+        <p style="color: #721c24; font-weight: 600; margin-bottom: 0.5rem;">¿Estás seguro de eliminar esta calificación?</p>
+        <p style="color: #721c24; margin: 0;">Esta acción no se puede deshacer.</p>
+    </div>
+    
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 5px; margin-bottom: 2rem;">
+        <p><strong>Instrumento:</strong> {{ calificacion.instrumento|default:"N/A" }}</p>
+        <p><strong>Corredor:</strong> {{ calificacion.corredor_dueno|default:"N/A" }}</p>
+        <p><strong>Mercado:</strong> {{ calificacion.mercado|default:"N/A" }}</p>
+    </div>
+    
+    <form method="post" style="display: flex; gap: 1rem;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
+        <a href="{% url 'accounts:detalle_calificacion' calificacion.pk %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+<!-- ============================================ -->
+<!-- 2. login.html -->
+<!-- Guardar en: accounts/templates/accounts/login.html -->
+<!-- ============================================ -->
+{% extends 'base.html' %}
+
+{% block title %}Login - NUAM{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div class="card" style="max-width: 450px; width: 100%;">
+        <h1 style="text-align: center; color: #667eea; margin-bottom: 2rem;">Iniciar Sesión</h1>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Usuario</label>
+                <input 
+                    type="text" 
+                    name="username" 
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                    placeholder="Ingresa tu usuario"
+                >
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contraseña</label>
+                <input 
+                    type="password" 
+                    name="password" 
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                    placeholder="Ingresa tu contraseña"
+                >
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">
+                Ingresar
+            </button>
+        </form>
+        
+        <p style="text-align: center; color: #666;">
+            ¿No tienes cuenta? <a href="{% url 'accounts:registro' %}" style="color: #667eea; text-decoration: none; font-weight: 600;">Regístrate aquí</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

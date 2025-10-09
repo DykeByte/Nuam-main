@@ -1,0 +1,78 @@
+
+<!-- ============================================ -->
+<!-- 3. registro.html -->
+<!-- Guardar en: accounts/templates/accounts/registro.html -->
+<!-- ============================================ -->
+{% extends 'base.html' %}
+
+{% block title %}Registro - NUAM{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div class="card" style="max-width: 450px; width: 100%;">
+        <h1 style="text-align: center; color: #667eea; margin-bottom: 2rem;">Crear Cuenta</h1>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Usuario</label>
+                <input 
+                    type="text" 
+                    name="username" 
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                    placeholder="Elige un nombre de usuario"
+                >
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Email</label>
+                <input 
+                    type="email" 
+                    name="email" 
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                    placeholder="tu@email.com"
+                >
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contraseña</label>
+                <input 
+                    type="password" 
+                    name="password" 
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                    placeholder="Mínimo 8 caracteres"
+                >
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Confirmar Contraseña</label>
+                <input 
+                    type="password" 
+                    name="password2" 
+                    required
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                    placeholder="Repite tu contraseña"
+                >
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">
+                Crear Cuenta
+            </button>
+        </form>
+        
+        <div style="background: #fff3cd; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+            <p style="color: #856404; font-size: 0.9rem; margin: 0;">
+                ⚠️ Tu cuenta será revisada por un administrador antes de ser activada.
+            </p>
+        </div>
+        
+        <p style="text-align: center; color: #666;">
+            ¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}" style="color: #667eea; text-decoration: none; font-weight: 600;">Inicia sesión</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

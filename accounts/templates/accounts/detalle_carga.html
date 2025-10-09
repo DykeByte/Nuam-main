@@ -1,0 +1,92 @@
+<!-- ============================================ -->
+<!-- 11. detalle_carga.html -->
+<!-- Guardar en: accounts/templates/accounts/detalle_carga.html -->
+<!-- ============================================ -->
+{% extends 'base.html' %}
+
+{% block title %}Detalle Carga - NUAM{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: #667eea;">Detalle de Carga</h1>
+        <a href="{% url 'accounts:lista_cargas' %}" class="btn btn-secondary">Volver</a>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2rem; font-weight: 600; color: #667eea;">{{ carga.registros_procesados }}</div>
+            <div style="color: #666; margin-top: 0.5rem;">Procesados</div>
+        </div>
+        
+        <div style="background: #d4edda; padding: 1.5rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2rem; font-weight: 600; color: #28a745;">{{ carga.registros_exitosos }}</div>
+            <div style="color: #155724; margin-top: 0.5rem;">Exitosos</div>
+        </div>
+        
+        <div style="background: #f8d7da; padding: 1.5rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2rem; font-weight: 600; color: #dc3545;">{{ carga.registros_fallidos }}</div>
+            <div style="color: #721c24; margin-top: 0.5rem;">Fallidos</div>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 2rem; font-weight: 600; color: #856404;">
+                {% widthratio carga.registros_exitosos carga.registros_procesados 100 %}%
+            </div>
+            <div style="color: #856404; margin-top: 0.5rem;">Tasa de Éxito</div>
+        </div>
+    </div>
+    
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">Información de la Carga</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <strong>Tipo de Carga:</strong> 
+                <span style="background: #667eea; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; margin-left: 0.5rem;">
+                    {{ carga.tipo_carga }}
+                </span>
+            </div>
+            <div><strong>Archivo:</strong> {{ carga.nombre_archivo }}</div>
+            <div><strong>Usuario:</strong> {{ carga.usuario.username }}</div>
+            <div><strong>Fecha:</strong> {{ carga.fecha_carga|date:"d/m/Y H:i:s" }}</div>
+        </div>
+    </div>
+    
+    {% if carga.errores_detalle %}
+    <div style="background: #f8d7da; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #dc3545; margin-bottom: 2rem;">
+        <h3 style="color: #721c24; margin-bottom: 1rem;">⚠️ Errores Detectados</h3>
+        <pre style="color: #721c24; white-space: pre-wrap; margin: 0;">{{ carga.errores_detalle }}</pre>
+    </div>
+    {% endif %}
+    
+    {% if calificaciones %}
+    <div>
+        <h3 style="color: #667eea; margin-bottom: 1rem;">Calificaciones Cargadas ({{ calificaciones.count }})</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 1rem; text-align: left;">Instrumento</th>
+                        <th style="padding: 1rem; text-align: left;">Corredor</th>
+                        <th style="padding: 1rem; text-align: left;">Mercado</th>
+                        <th style="padding: 1rem; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for calificacion in calificaciones %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 1rem;">{{ calificacion.instrumento|default:"N/A" }}</td>
+                        <td style="padding: 1rem;">{{ calificacion.corredor_dueno|default:"N/A" }}</td>
+                        <td style="padding: 1rem;">{{ calificacion.mercado|default:"N/A" }}</td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <a href="{% url 'accounts:detalle_calificacion' calificacion.pk %}" style="color: #667eea; text-decoration: none;">👁️ Ver</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
