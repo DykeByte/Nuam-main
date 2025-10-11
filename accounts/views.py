@@ -5,10 +5,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from .models import Perfil, CargaMasiva, CalificacionTributaria, LogOperacion
-from .utils.divisas import obtener_tipo_cambio
 from forex_python.converter import CurrencyRates
-
-
+from .excel_handler import ExcelHandler, get_columnas_esperadas
+from django.http import HttpResponse
+import pandas as pd
+from io import BytesIO
 
 # ==================== AUTENTICACIÓN ====================
 
@@ -98,27 +99,58 @@ def lista_cargas(request):
 
 @login_required
 def nueva_carga(request):
-    # Diccionario de divisas para pruebas
-    tasas_divisas = {
-        'USD': 850,   # 1 USD = 850 CLP
-        'EUR': 920,   # 1 EUR = 920 CLP
-        'CAD': 650,   # 1 CAD = 650 CLP
-        'COL': 0.22,  # 1 COP = 0.22 CLP
-        'PEN': 210,   # 1 PEN = 210 CLP
-        'CLP': 1,     # Peso chileno como referencia
-    }
-
     if request.method == 'POST':
-        # Aquí lógica de carga de archivos
-        messages.info(request, 'Funcionalidad de carga en desarrollo')
-        return redirect('accounts:lista_cargas')
+        tipo_carga = request.POST.get('tipo_carga')
+        archivo = request.FILES.get('archivo')
+        
+        # Validaciones básicas
+        if not tipo_carga:
+            messages.error(request, 'Debes seleccionar un tipo de carga')
+            return render(request, 'accounts/nueva_carga.html')
+        
+        if not archivo:
+            messages.error(request, 'Debes seleccionar un archivo')
+            return render(request, 'accounts/nueva_carga.html')
+        
+        # Validar extensión
+        if not archivo.name.endswith(('.xlsx', '.xls')):
+            messages.error(request, 'Solo se permiten archivos Excel (.xlsx, .xls)')
+            return render(request, 'accounts/nueva_carga.html')
+        
+        # Validar tamaño (máximo 5MB para pruebas)
+        if archivo.size > 5 * 1024 * 1024:
+            messages.error(request, 'El archivo es muy grande. Máximo 5MB')
+            return render(request, 'accounts/nueva_carga.html')
+        
+        try:
+            # Procesar el archivo
+            handler = ExcelHandler(archivo, tipo_carga, request.user)
+            carga = handler.procesar()
+            
+            # Mensaje de éxito
+            if carga.registros_fallidos > 0:
+                messages.warning(
+                    request, 
+                    f'Carga completada con advertencias: {carga.registros_exitosos} exitosos, {carga.registros_fallidos} fallidos'
+                )
+            else:
+                messages.success(
+                    request, 
+                    f'¡Carga exitosa! {carga.registros_exitosos} registros procesados'
+                )
+            
+            return redirect('accounts:detalle_carga', pk=carga.pk)
+            
+        except Exception as e:
+            messages.error(request, f'Error al procesar archivo: {str(e)}')
+            return render(request, 'accounts/nueva_carga.html')
     
+    # GET request
     context = {
-        'tasas_divisas': tasas_divisas
+        'columnas_factores': get_columnas_esperadas('FACTORES'),
+        'columnas_monitor': get_columnas_esperadas('MONITOR'),
     }
     return render(request, 'accounts/nueva_carga.html', context)
-
-
 
 @login_required
 def detalle_carga(request, pk):
@@ -131,6 +163,103 @@ def detalle_carga(request, pk):
     }
     return render(request, 'accounts/detalle_carga.html', context)
 
+@login_required
+def descargar_plantilla(request):
+    """Genera y descarga una plantilla Excel de ejemplo"""
+    
+    # Datos de ejemplo
+    datos = {
+        'corredor_dueno': ['Ejemplo Corredor 1', 'Ejemplo Corredor 2'],
+        'rut': ['12345678-9', '98765432-1'],
+        'ano_comercial': ['2024', '2024'],
+        'mercado': ['ACN', 'OCT'],
+        'instrumento': ['BONO-001', 'BONO-002'],
+        'fecha_pago': ['2024-12-31', '2024-11-30'],
+        'secuencia_evento': [1, 2],
+        'numero_dividendo': [1, 1],
+        'descripcion': ['Descripción ejemplo 1', 'Descripción ejemplo 2'],
+        'tipo_sociedad': ['A/C', 'A/C'],
+        'acopio_lsfxf': ['true', 'false'],
+        'valor_historico': [1000000, 2000000],
+        'factor_actualizacion': [1.05, 1.03],
+        'es_local': ['true', 'true'],
+        'origen': ['CARGA_MASIVA', 'CARGA_MASIVA'],
+    }
+    
+    # Agregar factores del 8 al 37
+    for i in range(8, 38):
+        datos[f'factor_{i}'] = [1.0 + (i/100), 1.0 + (i/100)]
+    
+    # Crear DataFrame
+    df = pd.DataFrame(datos)
+    
+    # Crear archivo Excel en memoria
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Datos')
+        
+        # Obtener el workbook y worksheet para dar formato
+        workbook = writer.book
+        worksheet = writer.sheets['Datos']
+        
+        # Ajustar ancho de columnas
+        for column in worksheet.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            worksheet.column_dimensions[column_letter].width = adjusted_width
+    
+    output.seek(0)
+    
+    # Crear respuesta HTTP
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=plantilla_carga_nuam.xlsx'
+    
+    return response
+
+def get_columnas_esperadas(tipo_carga):
+    """
+    Devuelve las columnas esperadas según el tipo de carga masiva.
+    """
+    if tipo_carga == 'FACTORES':
+        return [
+            'corredor_dueno',
+            'rut',
+            'ano_comercial',
+            'mercado',
+            'instrumento',
+            'fecha_pago',
+            'secuencia_evento',
+            'numero_dividendo',
+            'descripcion',
+            'tipo_sociedad',
+            'acopio_lsfxf',
+            'valor_historico',
+            'factor_actualizacion',
+            'es_local',
+            'origen'
+        ]
+    
+    elif tipo_carga == 'MONITOR':
+        return [
+            'fecha',
+            'indicador',
+            'valor',
+            'fuente',
+            'observaciones'
+        ]
+    
+    else:
+        return []
 
 # ==================== CALIFICACIONES ====================
 

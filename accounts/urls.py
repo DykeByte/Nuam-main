@@ -19,6 +19,7 @@ urlpatterns = [
     path('cargas/', views.lista_cargas, name='lista_cargas'),
     path('cargas/nueva/', views.nueva_carga, name='nueva_carga'),
     path('cargas/<int:pk>/', views.detalle_carga, name='detalle_carga'),
+    path('cargas/plantilla/', views.descargar_plantilla, name='descargar_plantilla'),  # NUEVA
     
     # Calificaciones Tributarias
     path('calificaciones/', views.lista_calificaciones, name='lista_calificaciones'),
@@ -29,4 +30,3 @@ urlpatterns = [
     # Logs/Auditoría
     path('logs/', views.lista_logs, name='lista_logs'),
 ]
-

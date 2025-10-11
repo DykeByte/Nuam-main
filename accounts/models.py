@@ -59,6 +59,7 @@ class CalificacionTributaria(models.Model):
     numero_dividendo = models.IntegerField(null=True, blank=True)
     descripcion = models.CharField(max_length=255, blank=True)
     tipo_sociedad = models.CharField(max_length=10, blank=True)
+    divisa = models.CharField(max_length=10, default='CLP')
     acopio_lsfxf = models.BooleanField(default=False)
     valor_historico = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     factor_actualizacion = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
