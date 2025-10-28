@@ -1,6 +1,6 @@
 # NUAM - Sistema de Gestión de Cargas Masivas
 
-Proyecto Django para gestión de cargas masivas y calificaciones tributarias, con soporte de múltiples divisas (USD, CLP, EUR, CAD, COP, PEN).
+Proyecto Django para gestión de cargas masivas y calificaciones tributarias, con soporte de múltiples divisas (USD, CLP, COP, PEN).
 
 ## 🚀 Instalación rápida
 
@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 SECRET_KEY='tu_secret_key_generada' (la secret key que puede generar django)
 DEBUG=True
-DATABASE_URL='postgres://usuario:contraseña@host:puerto/dbname' (aqui va el link a la DB de railway)
+DATABASE_URL='postgres://usuario:contraseña@host:puerto/dbname' (aqui va el link a la DB de railway, el documento con la info se adjunta por separado)
 
 2. Asegúrate de que .env esté incluido en .gitignore.
 
@@ -42,17 +42,17 @@ python manage.py createsuperuser
 
 python manage.py runserver
 Abrir en el navegador: http://127.0.0.1:8000/
-
+ve
 📄 Funcionalidades principales:
 
-- Registro de usuarios con aprobación manual
+- Registro de usuarios con aprobación manual y factores de seguridad
 
 - Cargas masivas de archivos Excel/CSV
 
 - Dashboard con estadísticas de calificaciones y cargas
 
-- Conversión de divisas (para pruebas se usan tasas fijas)
+- Conversión de divisas (para pruebas se usan tasas fijas)**
 
 - Reportes de validación de datos
 
-⚠️ Nota: La funcionalidad de procesamiento de archivos aún está en desarrollo.
+⚠️ Nota: La funcionalidad de conversión de divisas se encuentra en desarrollo.
