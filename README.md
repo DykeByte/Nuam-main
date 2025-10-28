@@ -7,7 +7,7 @@ Proyecto Django para gestión de cargas masivas y calificaciones tributarias, co
 1. Clonar el repositorio:
 
 ```bash
-git clone https://github.com/tu_usuario/Nuam-main.git
+git clone https://github.com/DykeByte/Nuam-main.git
 
 cd Nuam-main
 

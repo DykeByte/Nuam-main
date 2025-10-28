@@ -1,65 +1,132 @@
-
-<!-- ============================================ -->
-<!-- 3. registro.html -->
-<!-- Guardar en: accounts/templates/accounts/registro.html -->
-<!-- ============================================ -->
 {% extends 'base.html' %}
 
 {% block title %}Registro - NUAM{% endblock %}
 
 {% block content %}
 <div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
-    <div class="card" style="max-width: 450px; width: 100%;">
+    <div class="card" style="max-width: 550px; width: 100%;">
         <h1 style="text-align: center; color: #667eea; margin-bottom: 2rem;">Crear Cuenta</h1>
         
-        <form method="post">
+        <form method="post" id="registroForm" novalidate>
             {% csrf_token %}
             
+            <!-- NOMBRE DE USUARIO --> 
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Usuario</label>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                    Nombre de Usuario <span style="color: red;">*</span>
+                </label>
                 <input 
                     type="text" 
                     name="username" 
+                    id="username"
                     required
+                    minlength="3"
+                    maxlength="150"
+                    pattern="[a-zA-Z][a-zA-Z0-9_]*"
                     style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
-                    placeholder="Elige un nombre de usuario"
+                    placeholder="Ej: juan_perez123"
                 >
+                <small id="usernameHelp" style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    • Mínimo 3 caracteres<br>
+                    • Solo letras, números y guiones bajos (_)<br>
+                    • Debe comenzar con una letra
+                </small>
+                <div id="usernameError" style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             
+            <!-- EMAIL -->
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Email</label>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                    Correo Electrónico <span style="color: red;">*</span>
+                </label>
                 <input 
                     type="email" 
                     name="email" 
+                    id="email"
                     required
                     style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
-                    placeholder="tu@email.com"
+                    placeholder="ejemplo@correo.com"
                 >
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    Debe ser un correo válido con @
+                </small>
+                <div id="emailError" style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             
+            <!-- CONTRASEÑA -->
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contraseña</label>
-                <input 
-                    type="password" 
-                    name="password" 
-                    required
-                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
-                    placeholder="Mínimo 8 caracteres"
-                >
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                    Contraseña <span style="color: red;">*</span>
+                </label>
+                <div style="position: relative;">
+                    <input 
+                        type="password" 
+                        name="password" 
+                        id="password"
+                        required
+                        minlength="8"
+                        style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                        placeholder="Mínimo 8 caracteres"
+                    >
+                    <button 
+                        type="button" 
+                        onclick="togglePassword('password')" 
+                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.2rem;"
+                        title="Mostrar/Ocultar contraseña"
+                    >
+                        👁️
+                    </button>
+                </div>
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    La contraseña debe tener:<br>
+                    • Mínimo 8 caracteres<br>
+                    • Al menos una letra mayúscula (A-Z)<br>
+                    • Al menos una letra minúscula (a-z)<br>
+                    • Al menos un número (0-9)<br>
+                    • Al menos un carácter especial (!@#$%^&*...)
+                </small>
+                
+                <!-- Medidor de fortaleza -->
+                <div id="passwordStrength" style="margin-top: 0.5rem;">
+                    <div style="display: flex; gap: 0.25rem; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden;">
+                        <div id="strength1" style="flex: 1; background: #e0e0e0;"></div>
+                        <div id="strength2" style="flex: 1; background: #e0e0e0;"></div>
+                        <div id="strength3" style="flex: 1; background: #e0e0e0;"></div>
+                        <div id="strength4" style="flex: 1; background: #e0e0e0;"></div>
+                    </div>
+                    <small id="strengthText" style="font-size: 0.85rem; color: #666;"></small>
+                </div>
+                <div id="passwordError" style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             
+            <!-- CONFIRMAR CONTRASEÑA -->
             <div style="margin-bottom: 2rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Confirmar Contraseña</label>
-                <input 
-                    type="password" 
-                    name="password2" 
-                    required
-                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
-                    placeholder="Repite tu contraseña"
-                >
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                    Confirmar Contraseña <span style="color: red;">*</span>
+                </label>
+                <div style="position: relative;">
+                    <input 
+                        type="password" 
+                        name="password2" 
+                        id="password2"
+                        required
+                        minlength="8"
+                        style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                        placeholder="Repite tu contraseña"
+                    >
+                    <button 
+                        type="button" 
+                        onclick="togglePassword('password2')" 
+                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.2rem;"
+                        title="Mostrar/Ocultar contraseña"
+                    >
+                        👁️
+                    </button>
+                </div>
+                <div id="password2Error" style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" id="submitBtn">
                 Crear Cuenta
             </button>
         </form>
@@ -75,4 +142,213 @@
         </p>
     </div>
 </div>
+
+<script>
+// Función para mostrar/ocultar contraseña
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    field.type = field.type === 'password' ? 'text' : 'password';
+}
+
+// Validar username en tiempo real
+document.getElementById('username').addEventListener('input', function(e) {
+    const username = e.target.value;
+    const errorDiv = document.getElementById('usernameError');
+    const field = e.target;
+    
+    // Resetear
+    errorDiv.style.display = 'none';
+    field.style.borderColor = '#e0e0e0';
+    
+    if (username.length === 0) return;
+    
+    // Validaciones
+    if (username.length < 3) {
+        errorDiv.textContent = '❌ Mínimo 3 caracteres';
+        errorDiv.style.display = 'block';
+        field.style.borderColor = '#dc3545';
+        return;
+    }
+    
+    if (!/^[a-zA-Z]/.test(username)) {
+        errorDiv.textContent = '❌ Debe comenzar con una letra';
+        errorDiv.style.display = 'block';
+        field.style.borderColor = '#dc3545';
+        return;
+    }
+    
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        errorDiv.textContent = '❌ Solo letras, números y guiones bajos';
+        errorDiv.style.display = 'block';
+        field.style.borderColor = '#dc3545';
+        return;
+    }
+    
+    // Todo OK
+    field.style.borderColor = '#28a745';
+});
+
+// Validar email en tiempo real
+document.getElementById('email').addEventListener('blur', function(e) {
+    const email = e.target.value;
+    const errorDiv = document.getElementById('emailError');
+    const field = e.target;
+    
+    errorDiv.style.display = 'none';
+    field.style.borderColor = '#e0e0e0';
+    
+    if (email.length === 0) return;
+    
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    if (!emailRegex.test(email)) {
+        errorDiv.textContent = '❌ Correo electrónico inválido';
+        errorDiv.style.display = 'block';
+        field.style.borderColor = '#dc3545';
+        return;
+    }
+    
+    if (!email.includes('@')) {
+        errorDiv.textContent = '❌ Debe contener @';
+        errorDiv.style.display = 'block';
+        field.style.borderColor = '#dc3545';
+        return;
+    }
+    
+    // Todo OK
+    field.style.borderColor = '#28a745';
+});
+
+// Medidor de fortaleza de contraseña
+document.getElementById('password').addEventListener('input', function(e) {
+    const password = e.target.value;
+    const errorDiv = document.getElementById('passwordError');
+    const field = e.target;
+    let strength = 0;
+    
+    errorDiv.style.display = 'none';
+    field.style.borderColor = '#e0e0e0';
+    
+    if (password.length === 0) {
+        resetStrength();
+        return;
+    }
+    
+    // Calcular fortaleza
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
+    
+    // Actualizar visualización
+    updateStrength(strength);
+    
+    // Validar requisitos
+    const errors = [];
+    if (password.length < 8) errors.push('Mínimo 8 caracteres');
+    if (!/[A-Z]/.test(password)) errors.push('Falta mayúscula');
+    if (!/[a-z]/.test(password)) errors.push('Falta minúscula');
+    if (!/\d/.test(password)) errors.push('Falta número');
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('Falta carácter especial');
+    
+    if (errors.length > 0) {
+        errorDiv.textContent = '❌ ' + errors.join(', ');
+        errorDiv.style.display = 'block';
+        field.style.borderColor = '#dc3545';
+    } else {
+        field.style.borderColor = '#28a745';
+    }
+});
+
+function updateStrength(level) {
+    const colors = ['#dc3545', '#fd7e14', '#ffc107', '#28a745'];
+    const texts = ['Muy débil', 'Débil', 'Aceptable', 'Fuerte', 'Muy fuerte'];
+    
+    // Resetear
+    for (let i = 1; i <= 4; i++) {
+        document.getElementById('strength' + i).style.background = '#e0e0e0';
+    }
+    
+    // Llenar barras
+    for (let i = 1; i <= Math.min(level, 4); i++) {
+        document.getElementById('strength' + i).style.background = colors[Math.min(level - 1, 3)];
+    }
+    
+    document.getElementById('strengthText').textContent = texts[Math.min(level, 4)];
+    document.getElementById('strengthText').style.color = colors[Math.min(level - 1, 3)];
+}
+
+function resetStrength() {
+    for (let i = 1; i <= 4; i++) {
+        document.getElementById('strength' + i).style.background = '#e0e0e0';
+    }
+    document.getElementById('strengthText').textContent = '';
+}
+
+// Validar confirmación de contraseña
+document.getElementById('password2').addEventListener('input', function(e) {
+    const password = document.getElementById('password').value;
+    const password2 = e.target.value;
+    const errorDiv = document.getElementById('password2Error');
+    const field = e.target;
+    
+    errorDiv.style.display = 'none';
+    field.style.borderColor = '#e0e0e0';
+    
+    if (password2.length === 0) return;
+    
+    if (password !== password2) {
+        errorDiv.textContent = '❌ Las contraseñas no coinciden';
+        errorDiv.style.display = 'block';
+        field.style.borderColor = '#dc3545';
+    } else {
+        field.style.borderColor = '#28a745';
+    }
+});
+
+// Validación final antes de enviar
+document.getElementById('registroForm').addEventListener('submit', function(e) {
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const password2 = document.getElementById('password2').value;
+    
+    let isValid = true;
+    
+    // Validar username
+    if (username.length < 3 || !/^[a-zA-Z][a-zA-Z0-9_]*$/.test(username)) {
+        isValid = false;
+        document.getElementById('usernameError').textContent = '❌ Nombre de usuario inválido';
+        document.getElementById('usernameError').style.display = 'block';
+    }
+    
+    // Validar email
+    if (!/@/.test(email)) {
+        isValid = false;
+        document.getElementById('emailError').textContent = '❌ Email debe contener @';
+        document.getElementById('emailError').style.display = 'block';
+    }
+    
+    // Validar contraseña
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || 
+        !/\d/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        isValid = false;
+        document.getElementById('passwordError').textContent = '❌ La contraseña no cumple los requisitos';
+        document.getElementById('passwordError').style.display = 'block';
+    }
+    
+    // Validar confirmación
+    if (password !== password2) {
+        isValid = false;
+        document.getElementById('password2Error').textContent = '❌ Las contraseñas no coinciden';
+        document.getElementById('password2Error').style.display = 'block';
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Por favor corrige los errores antes de continuar');
+    }
+});
+</script>
 {% endblock %}

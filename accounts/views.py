@@ -10,33 +10,48 @@ from .excel_handler import ExcelHandler, get_columnas_esperadas
 from django.http import HttpResponse
 import pandas as pd
 from io import BytesIO
+from .forms import RegistroForm
+
+
 
 # ==================== AUTENTICACIÓN ====================
 
 def registro(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        password2 = request.POST.get('password2')
-        
-        if password != password2:
-            messages.error(request, 'Las contraseñas no coinciden')
-            return render(request, 'accounts/registro.html')
-        
-        if User.objects.filter(username=username).exists():
-            messages.error(request, 'El nombre de usuario ya existe')
-            return render(request, 'accounts/registro.html')
-        
-        if User.objects.filter(email=email).exists():
-            messages.error(request, 'El email ya está registrado')
-            return render(request, 'accounts/registro.html')
-        
-        user = User.objects.create_user(username=username, email=email, password=password)
-        messages.success(request, 'Cuenta creada. Esperando aprobación del administrador.')
-        return redirect('accounts:login')
+    """Vista de registro con validaciones robustas"""
     
-    return render(request, 'accounts/registro.html')
+    if request.method == 'POST':
+        form = RegistroForm(request.POST)
+        
+        if form.is_valid():
+            try:
+                # Crear usuario
+                user = User.objects.create_user(
+                    username=form.cleaned_data['username'],
+                    email=form.cleaned_data['email'],
+                    password=form.cleaned_data['password']
+                )
+                
+                # El perfil se crea automáticamente por el signal
+                
+                messages.success(
+                    request, 
+                    '¡Cuenta creada exitosamente! Tu cuenta está pendiente de aprobación por el administrador.'
+                )
+                return redirect('accounts:login')
+                
+            except Exception as e:
+                messages.error(request, f'Error al crear la cuenta: {str(e)}')
+        
+        else:
+            # Mostrar errores del formulario
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+    
+    else:
+        form = RegistroForm()
+    
+    return render(request, 'accounts/registro.html', {'form': form})
 
 
 def mi_login(request):
@@ -99,56 +114,74 @@ def lista_cargas(request):
 
 @login_required
 def nueva_carga(request):
+    tasas = ['CLP', 'PEN', 'COP']  # Monedas disponibles
+
     if request.method == 'POST':
         tipo_carga = request.POST.get('tipo_carga')
         archivo = request.FILES.get('archivo')
-        
+        mercado_seleccionado = request.POST.get('mercado', 'CLP')  # default CLP
+
         # Validaciones básicas
-        if not tipo_carga:
-            messages.error(request, 'Debes seleccionar un tipo de carga')
-            return render(request, 'accounts/nueva_carga.html')
-        
-        if not archivo:
-            messages.error(request, 'Debes seleccionar un archivo')
-            return render(request, 'accounts/nueva_carga.html')
-        
-        # Validar extensión
+        if not tipo_carga or not archivo:
+            messages.error(request, 'Debes completar todos los campos')
+            context = {
+                'columnas_factores': get_columnas_esperadas('FACTORES'),
+                'columnas_monitor': get_columnas_esperadas('MONITOR'),
+                'tasas': tasas,
+                'mercado_seleccionado': mercado_seleccionado
+            }
+            return render(request, 'accounts/nueva_carga.html', context)
+
+        # Validar extensión y tamaño
         if not archivo.name.endswith(('.xlsx', '.xls')):
             messages.error(request, 'Solo se permiten archivos Excel (.xlsx, .xls)')
-            return render(request, 'accounts/nueva_carga.html')
-        
-        # Validar tamaño (máximo 5MB para pruebas)
+            return render(request, 'accounts/nueva_carga.html', context)
         if archivo.size > 5 * 1024 * 1024:
             messages.error(request, 'El archivo es muy grande. Máximo 5MB')
-            return render(request, 'accounts/nueva_carga.html')
-        
+            return render(request, 'accounts/nueva_carga.html', context)
+
         try:
             # Procesar el archivo
             handler = ExcelHandler(archivo, tipo_carga, request.user)
             carga = handler.procesar()
-            
+
+            # Conversión de moneda
+            cr = CurrencyRates()
+            factor_conversion = 1.0
+            if mercado_seleccionado != 'CLP':
+                factor_conversion = cr.get_rate('CLP', mercado_seleccionado)
+
+            # Aplicar la conversión a todos los registros de la carga
+            for calificacion in carga.calificaciontributaria_set.all():
+                if calificacion.valor_historico:
+                    calificacion.valor_convertido = calificacion.valor_historico * factor_conversion
+                    calificacion.moneda = mercado_seleccionado
+                    calificacion.save()
+
             # Mensaje de éxito
             if carga.registros_fallidos > 0:
                 messages.warning(
-                    request, 
-                    f'Carga completada con advertencias: {carga.registros_exitosos} exitosos, {carga.registros_fallidos} fallidos'
+                    request,
+                    f'Carga completada con advertencias: {carga.registros_exitosos} exitosos, {carga.registros_fallidos} fallidos. Valores convertidos a {mercado_seleccionado}.'
                 )
             else:
                 messages.success(
-                    request, 
-                    f'¡Carga exitosa! {carga.registros_exitosos} registros procesados'
+                    request,
+                    f'¡Carga exitosa! {carga.registros_exitosos} registros procesados. Valores convertidos a {mercado_seleccionado}.'
                 )
-            
+
             return redirect('accounts:detalle_carga', pk=carga.pk)
-            
+
         except Exception as e:
             messages.error(request, f'Error al procesar archivo: {str(e)}')
-            return render(request, 'accounts/nueva_carga.html')
-    
+            return render(request, 'accounts/nueva_carga.html', context={'tasas': tasas, 'mercado_seleccionado': 'CLP'})
+
     # GET request
     context = {
         'columnas_factores': get_columnas_esperadas('FACTORES'),
         'columnas_monitor': get_columnas_esperadas('MONITOR'),
+        'tasas': tasas,
+        'mercado_seleccionado': 'CLP'
     }
     return render(request, 'accounts/nueva_carga.html', context)
 
@@ -165,12 +198,13 @@ def detalle_carga(request, pk):
 
 @login_required
 def descargar_plantilla(request):
-    """Genera y descarga una plantilla Excel de ejemplo"""
+    """Genera y descarga una plantilla Excel actualizada con los campos reales del modelo"""
     
-    # Datos de ejemplo
+    # Datos de ejemplo sincronizados con el modelo real
     datos = {
-        'corredor_dueno': ['Ejemplo Corredor 1', 'Ejemplo Corredor 2'],
-        'rut': ['12345678-9', '98765432-1'],
+        # Campos básicos
+        'corredor_dueno': ['Corredor Ejemplo A', 'Corredor Ejemplo B'],
+        'rut_es_el_manual': ['12345678-9', '98765432-1'],
         'ano_comercial': ['2024', '2024'],
         'mercado': ['ACN', 'OCT'],
         'instrumento': ['BONO-001', 'BONO-002'],
@@ -179,14 +213,16 @@ def descargar_plantilla(request):
         'numero_dividendo': [1, 1],
         'descripcion': ['Descripción ejemplo 1', 'Descripción ejemplo 2'],
         'tipo_sociedad': ['A/C', 'A/C'],
+        'divisa': ['CLP', 'USD'],
         'acopio_lsfxf': ['true', 'false'],
-        'valor_historico': [1000000, 2000000],
+        'valor_historico': [1000000.00, 2000000.00],
         'factor_actualizacion': [1.05, 1.03],
-        'es_local': ['true', 'true'],
+        'valor_convertido': [1050000.00, 2060000.00],
         'origen': ['CARGA_MASIVA', 'CARGA_MASIVA'],
+        'es_local': ['true', 'true'],
     }
     
-    # Agregar factores del 8 al 37
+    # Agregar factores del 8 al 37 (30 factores)
     for i in range(8, 38):
         datos[f'factor_{i}'] = [1.0 + (i/100), 1.0 + (i/100)]
     

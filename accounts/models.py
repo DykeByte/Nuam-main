@@ -64,6 +64,11 @@ class CalificacionTributaria(models.Model):
     valor_historico = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     factor_actualizacion = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
     
+    # NUEVOS CAMPOS PARA CONVERSIÓN
+    valor_convertido = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+
+
+    
     # Factores del 8 al 37
     factor_8 = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
     factor_9 = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)

@@ -9,6 +9,7 @@
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         
+        <!-- Selección de tipo de carga -->
         <div style="margin-bottom: 2rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Tipo de Carga</label>
             <select name="tipo_carga" id="tipoCarga" required
@@ -19,6 +20,7 @@
             </select>
         </div>
         
+        <!-- Selección de archivo -->
         <div style="margin-bottom: 2rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Archivo Excel (.xlsx)</label>
             <div style="border: 2px dashed #667eea; border-radius: 10px; padding: 3rem; text-align: center; background: #f8f9fa;">
@@ -31,6 +33,17 @@
                 </label>
                 <div id="fileName" style="margin-top: 1rem; color: #28a745; font-weight: 600;"></div>
             </div>
+        </div>
+        
+        <!-- Selección de moneda -->
+        <div style="margin-bottom: 2rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Moneda de Conversión</label>
+            <select name="mercado" required
+                style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;">
+                {% for t in tasas %}
+                    <option value="{{ t }}" {% if mercado_seleccionado == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
         </div>
         
         <!-- Información sobre columnas esperadas -->
@@ -81,6 +94,7 @@
             </div>
         </div>
         
+        <!-- Recomendaciones -->
         <div style="background: #fff3cd; padding: 1.5rem; border-radius: 5px; border-left: 4px solid #ffc107; margin-bottom: 2rem;">
             <h3 style="color: #856404; margin-bottom: 0.5rem;">⚠️ Recomendaciones</h3>
             <ul style="color: #856404; margin: 0; padding-left: 1.5rem;">

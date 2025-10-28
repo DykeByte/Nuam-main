@@ -1,4 +1,4 @@
-# accounts/excel_handler.py
+# accounts/excel_handler.py - VERSIÓN ACTUALIZADA
 import pandas as pd
 from datetime import datetime
 from .models import CalificacionTributaria, CargaMasiva, LogOperacion
@@ -35,7 +35,7 @@ class ExcelHandler:
             # Procesar cada fila
             for index, row in df.iterrows():
                 try:
-                    self._procesar_fila(row, carga, index + 2)  # +2 porque Excel empieza en 1 y tiene header
+                    self._procesar_fila(row, carga, index + 2)
                     self.registros_exitosos += 1
                 except Exception as e:
                     self.registros_fallidos += 1
@@ -74,25 +74,28 @@ class ExcelHandler:
             carga_masiva=carga
         )
         
-        # Mapear campos básicos (con valores por defecto si no existen)
+        # Mapear campos básicos
         calificacion.corredor_dueno = self._get_value(row, 'corredor_dueno', '')
-        calificacion.rut_es_el_manual = self._get_value(row, 'rut', '')
+        calificacion.rut_es_el_manual = self._get_value(row, 'rut_es_el_manual', '')
         calificacion.ano_comercial = self._get_value(row, 'ano_comercial', '')
         calificacion.mercado = self._get_value(row, 'mercado', '')
         calificacion.instrumento = self._get_value(row, 'instrumento', '')
         calificacion.descripcion = self._get_value(row, 'descripcion', '')
         calificacion.tipo_sociedad = self._get_value(row, 'tipo_sociedad', '')
+        calificacion.divisa = self._get_value(row, 'divisa', 'CLP')
+        calificacion.origen = self._get_value(row, 'origen', 'CARGA_MASIVA')
         
         # Campos numéricos
         calificacion.secuencia_evento = self._get_int_value(row, 'secuencia_evento')
         calificacion.numero_dividendo = self._get_int_value(row, 'numero_dividendo')
         calificacion.valor_historico = self._get_decimal_value(row, 'valor_historico')
         calificacion.factor_actualizacion = self._get_decimal_value(row, 'factor_actualizacion')
+        calificacion.valor_convertido = self._get_decimal_value(row, 'valor_convertido')
         
         # Fecha
         calificacion.fecha_pago = self._get_date_value(row, 'fecha_pago')
         
-        # Boolean
+        # Booleanos
         calificacion.acopio_lsfxf = self._get_bool_value(row, 'acopio_lsfxf')
         calificacion.es_local = self._get_bool_value(row, 'es_local', default=True)
         
@@ -100,10 +103,6 @@ class ExcelHandler:
         for i in range(8, 38):
             factor_name = f'factor_{i}'
             setattr(calificacion, factor_name, self._get_decimal_value(row, factor_name))
-        
-        # Otros campos
-        calificacion.divisa = self._get_value(row, 'divisa', 'CLP')
-        calificacion.origen = self._get_value(row, 'origen', 'CARGA_MASIVA')
         
         # Guardar
         calificacion.save()
@@ -147,11 +146,9 @@ class ExcelHandler:
             if pd.isna(value):
                 return default
             
-            # Si ya es datetime
             if isinstance(value, datetime):
                 return value.date()
             
-            # Si es string, intentar parsear
             if isinstance(value, str):
                 return datetime.strptime(value, '%Y-%m-%d').date()
             
@@ -166,7 +163,6 @@ class ExcelHandler:
             if pd.isna(value):
                 return default
             
-            # Convertir diferentes formatos a bool
             if isinstance(value, bool):
                 return value
             
@@ -181,7 +177,7 @@ def get_columnas_esperadas(tipo_carga):
     
     columnas_basicas = [
         'corredor_dueno',
-        'rut',
+        'rut_es_el_manual',
         'ano_comercial',
         'mercado',
         'instrumento',
@@ -190,9 +186,13 @@ def get_columnas_esperadas(tipo_carga):
         'numero_dividendo',
         'descripcion',
         'tipo_sociedad',
+        'divisa',
         'acopio_lsfxf',
         'valor_historico',
         'factor_actualizacion',
+        'valor_convertido',
+        'origen',
+        'es_local',
     ]
     
     # Agregar factores del 8 al 37
