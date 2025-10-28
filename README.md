@@ -13,7 +13,7 @@ cd Nuam-main
 
 2. Crear y activar entorno virual:
 
-python -m venv venv
+python3 -m venv venv   
 source venv/bin/activate  # macOS/Linux
 venv\Scripts\activate     # Windows
 
@@ -25,9 +25,11 @@ pip install -r requirements.txt
 
 1. Crear un archivo .env en la raíz del proyecto:
 
-SECRET_KEY='tu_secret_key_generada' (la secret key que puede generar django)
+SECRET_KEY='tu_secret_key_generada' 
 DEBUG=True
-DATABASE_URL='postgres://usuario:contraseña@host:puerto/dbname' (aqui va el link a la DB de railway, el documento con la info se adjunta por separado)
+DATABASE_URL='postgres://usuario:contraseña@host:puerto/dbname'
+
+(se debe revisar documentación adjunta para obtener las credenciales correspondientes)** 
 
 2. Asegúrate de que .env esté incluido en .gitignore.
 
@@ -42,7 +44,26 @@ python manage.py createsuperuser
 
 python manage.py runserver
 Abrir en el navegador: http://127.0.0.1:8000/
-ve
+
+Sugerencia de uso del sistema:
+
+Una vez iniciado el servidor, se recomienda realizar la siguiente verificación funcional:
+
+1. Registro de usuario:
+En la página principal, realice un registro como usuario nuevo para observar el flujo de autenticación.
+
+2. Validación por administrador:
+Los usuarios recién registrados deben ser validados por el administrador antes de poder acceder al sistema.
+Para ello, cree un superusuario (como se indica más arriba) y acceda al panel de administración de Django desde:
+👉 http://127.0.0.1:8000/admin
+
+3. Autorización del usuario:
+Dentro del panel de administración, ubique al usuario registrado y márquelo como activo o autorizado.
+
+4. Acceso al sistema:
+Una vez autorizado, el usuario podrá ingresar utilizando las credenciales creadas durante el registro.
+
+
 📄 Funcionalidades principales:
 
 - Registro de usuarios con aprobación manual y factores de seguridad
