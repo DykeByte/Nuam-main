@@ -1,59 +1,73 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 
 {% block title %}Nueva Carga - NUAM{% endblock %}
 
 {% block content %}
 <div class="card" style="max-width: 900px; margin: 0 auto;">
     <h1 style="color: #667eea; margin-bottom: 2rem;">Nueva Carga Masiva</h1>
-    
+
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        
-        <!-- Selección de tipo de carga -->
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Tipo de carga -->
         <div style="margin-bottom: 2rem;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Tipo de Carga</label>
-            <select name="tipo_carga" id="tipoCarga" required
-                style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;">
-                <option value="">Selecciona un tipo</option>
-                <option value="FACTORES">Factores (Incluye todos los factores del 8 al 37)</option>
-                <option value="MONITOR">Monitor (Solo datos básicos)</option>
-            </select>
+            {{ form.tipo_carga.label_tag }}
+            {{ form.tipo_carga|add_class:"form-control" }}
+            {% if form.tipo_carga.errors %}
+                <div class="text-danger">{{ form.tipo_carga.errors }}</div>
+            {% endif %}
         </div>
-        
-        <!-- Selección de archivo -->
+
+        <!-- Archivo -->
         <div style="margin-bottom: 2rem;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Archivo Excel (.xlsx)</label>
+            {{ form.archivo.label_tag }}
             <div style="border: 2px dashed #667eea; border-radius: 10px; padding: 3rem; text-align: center; background: #f8f9fa;">
-                <input type="file" name="archivo" accept=".xlsx,.xls" required
-                    style="display: none;" id="fileInput">
-                <label for="fileInput" style="cursor: pointer;">
+                
+                {{ form.archivo|add_class:"form-control" }}
+                <label for="id_archivo" style="cursor: pointer;">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
-                    <p style="color: #667eea; font-weight: 600; margin-bottom: 0.5rem;">Haz click para seleccionar archivo</p>
-                    <p style="color: #999; font-size: 0.9rem;">Formatos aceptados: .xlsx, .xls (Máximo 5MB)</p>
+                    <p style="color: #667eea; font-weight: 600; margin-bottom: 0.5rem;">
+                        Haz click para seleccionar archivo
+                    </p>
+                    <p style="color: #999; font-size: 0.9rem;">
+                        Formatos aceptados: .xlsx, .xls (Máximo 5MB)
+                    </p>
                 </label>
+
                 <div id="fileName" style="margin-top: 1rem; color: #28a745; font-weight: 600;"></div>
             </div>
+
+            {% if form.archivo.errors %}
+                <div class="text-danger">{{ form.archivo.errors }}</div>
+            {% endif %}
         </div>
-        
-        <!-- Selección de moneda -->
+
+        <!-- Mercado -->
         <div style="margin-bottom: 2rem;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Moneda de Conversión</label>
-            <select name="mercado" required
-                style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;">
-                {% for t in tasas %}
-                    <option value="{{ t }}" {% if mercado_seleccionado == t %}selected{% endif %}>{{ t }}</option>
-                {% endfor %}
-            </select>
+            {{ form.mercado.label_tag }}
+            {{ form.mercado|add_class:"form-control" }}
+            {% if form.mercado.errors %}
+                <div class="text-danger">{{ form.mercado.errors }}</div>
+            {% endif %}
         </div>
-        
-        <!-- Información sobre columnas esperadas -->
+
+        <!-- Info columnas requeridas -->
         <div style="background: #d1ecf1; padding: 1.5rem; border-radius: 5px; border-left: 4px solid #17a2b8; margin-bottom: 2rem;">
             <h3 style="color: #0c5460; margin-bottom: 1rem;">ℹ️ Columnas Requeridas</h3>
-            
             <div id="columnasInfo" style="display: none;">
+
                 <div id="columnasFactores" style="display: none;">
                     <h4 style="color: #0c5460; margin-bottom: 0.5rem;">Tipo FACTORES:</h4>
-                    <ul style="color: #0c5460; margin: 0; padding-left: 1.5rem; columns: 2;">
+                    <ul style="color: #0c5460; padding-left: 1.5rem; columns: 2;">
                         <li>corredor_dueno</li>
                         <li>rut</li>
                         <li>ano_comercial</li>
@@ -71,10 +85,10 @@
                         <li>factor_8 a factor_37 (30 columnas)</li>
                     </ul>
                 </div>
-                
+
                 <div id="columnasMonitor" style="display: none;">
                     <h4 style="color: #0c5460; margin-bottom: 0.5rem;">Tipo MONITOR:</h4>
-                    <ul style="color: #0c5460; margin: 0; padding-left: 1.5rem; columns: 2;">
+                    <ul style="color: #0c5460; padding-left: 1.5rem; columns: 2;">
                         <li>corredor_dueno</li>
                         <li>rut</li>
                         <li>ano_comercial</li>
@@ -91,28 +105,28 @@
                         <li>es_local</li>
                     </ul>
                 </div>
+
             </div>
         </div>
-        
+
         <!-- Recomendaciones -->
         <div style="background: #fff3cd; padding: 1.5rem; border-radius: 5px; border-left: 4px solid #ffc107; margin-bottom: 2rem;">
             <h3 style="color: #856404; margin-bottom: 0.5rem;">⚠️ Recomendaciones</h3>
-            <ul style="color: #856404; margin: 0; padding-left: 1.5rem;">
-                <li>Usa la primera fila como encabezado con los nombres exactos de las columnas</li>
-                <li>Las fechas deben estar en formato: YYYY-MM-DD (ej: 2024-12-31)</li>
-                <li>Los valores booleanos pueden ser: true/false, 1/0, sí/no</li>
-                <li>Los decimales pueden usar punto o coma</li>
-                <li>Para pruebas, usa máximo 100 registros</li>
+            <ul style="color: #856404; padding-left: 1.5rem;">
+                <li>Usa encabezado con nombres exactos de las columnas</li>
+                <li>Formato fecha: YYYY-MM-DD</li>
+                <li>Booleanos: true/false, 1/0, sí/no</li>
+                <li>Decimales con punto o coma</li>
+                <li>Máximo 100 registros para pruebas</li>
             </ul>
         </div>
-        
+
         <div style="display: flex; gap: 1rem;">
             <button type="submit" class="btn btn-primary">📤 Subir y Procesar</button>
             <a href="{% url 'accounts:lista_cargas' %}" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
-    
-    <!-- Botón para descargar plantilla -->
+
     <div style="margin-top: 2rem; padding: 1.5rem; background: #e7f3ff; border-radius: 5px; text-align: center;">
         <p style="color: #004085; margin-bottom: 1rem;">
             <strong>¿Primera vez?</strong> Descarga la plantilla de ejemplo
@@ -124,36 +138,35 @@
 </div>
 
 <script>
-    // Mostrar nombre del archivo seleccionado
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const fileName = e.target.files[0]?.name;
-        const fileSize = e.target.files[0]?.size;
-        const fileNameDiv = document.getElementById('fileName');
-        
-        if (fileName) {
-            const sizeMB = (fileSize / (1024 * 1024)).toFixed(2);
-            fileNameDiv.innerHTML = `✓ Archivo seleccionado: <strong>${fileName}</strong><br>Tamaño: ${sizeMB} MB`;
-        }
-    });
-    
-    // Mostrar columnas según tipo de carga
-    document.getElementById('tipoCarga').addEventListener('change', function(e) {
-        const tipo = e.target.value;
-        const columnasInfo = document.getElementById('columnasInfo');
-        const columnasFactores = document.getElementById('columnasFactores');
-        const columnasMonitor = document.getElementById('columnasMonitor');
-        
-        if (tipo === 'FACTORES') {
-            columnasInfo.style.display = 'block';
-            columnasFactores.style.display = 'block';
-            columnasMonitor.style.display = 'none';
-        } else if (tipo === 'MONITOR') {
-            columnasInfo.style.display = 'block';
-            columnasFactores.style.display = 'none';
-            columnasMonitor.style.display = 'block';
-        } else {
-            columnasInfo.style.display = 'none';
-        }
-    });
+document.getElementById('id_archivo').addEventListener('change', function(e) {
+    const fileName = e.target.files[0]?.name;
+    const fileSize = e.target.files[0]?.size;
+    const fileNameDiv = document.getElementById('fileName');
+
+    if (fileName) {
+        const sizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+        fileNameDiv.innerHTML = `✓ Archivo seleccionado: <strong>${fileName}</strong><br>Tamaño: ${sizeMB} MB`;
+    }
+});
+
+document.getElementById('id_tipo_carga').addEventListener('change', function(e) {
+    const tipo = e.target.value;
+    const columnasInfo = document.getElementById('columnasInfo');
+    const columnasFactores = document.getElementById('columnasFactores');
+    const columnasMonitor = document.getElementById('columnasMonitor');
+
+    if (tipo === 'FACTORES') {
+        columnasInfo.style.display = 'block';
+        columnasFactores.style.display = 'block';
+        columnasMonitor.style.display = 'none';
+    } else if (tipo === 'MONITOR') {
+        columnasInfo.style.display = 'block';
+        columnasFactores.style.display = 'none';
+        columnasMonitor.style.display = 'block';
+    } else {
+        columnasInfo.style.display = 'none';
+    }
+});
 </script>
+
 {% endblock %}

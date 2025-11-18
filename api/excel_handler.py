@@ -1,7 +1,7 @@
 # accounts/excel_handler.py - VERSIÓN ACTUALIZADA
 import pandas as pd
 from datetime import datetime
-from .models import CalificacionTributaria, CargaMasiva, LogOperacion
+from api.models import CalificacionTributaria, CargaMasiva, LogOperacion
 
 
 class ExcelHandler:
