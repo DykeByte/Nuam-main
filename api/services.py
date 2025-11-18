@@ -1,6 +1,6 @@
 # api/services.py
 
-from django.db.models import Count
+from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import User
@@ -14,71 +14,101 @@ from io import BytesIO
 # -------------------------
 # LOGGING DE OPERACIONES
 # -------------------------
-def registrar_log(usuario: User, operacion: str, calificacion=None, datos_anteriores=None, datos_nuevos=None, ip=None):
-    return LogOperacion.objects.create(
-        usuario=usuario,
-        calificacion=calificacion,
-        operacion=operacion,
-        datos_anteriores=datos_anteriores,
-        datos_nuevos=datos_nuevos,
-        ip_address=ip
-    )
+def registrar_log(usuario, operacion, objeto, datos_anteriores=None, datos_nuevos=None):
+    """Registra una operación en el log"""
+    from api.models import LogOperacion
+    
+    log_data = {
+        'usuario': usuario,
+        'operacion': operacion,
+        'datos_anteriores': datos_anteriores,
+        'datos_nuevos': datos_nuevos,
+    }
+    
+    if objeto and hasattr(objeto, '__class__'):
+        if objeto.__class__.__name__ == 'CalificacionTributaria':
+            log_data['calificacion'] = objeto
+        elif objeto.__class__.__name__ == 'CargaMasiva':
+            log_data['carga_masiva'] = objeto
+    
+    return LogOperacion.objects.create(**log_data)
+
 
 
 # -------------------------
 # ESTADÍSTICAS DASHBOARD
 # -------------------------
 def obtener_estadisticas_dashboard(usuario):
-    ahora = timezone.now()
-    hace_7_dias = ahora - timedelta(days=7)
-
-    # Calificaciones por usuario
+    """
+    Obtiene estadísticas generales del dashboard para un usuario.
+    """
     calificaciones = CalificacionTributaria.objects.filter(usuario=usuario)
-    total_calificaciones = calificaciones.count()
-
-    # Conteo de cargas
     cargas = CargaMasiva.objects.filter(iniciado_por=usuario)
-    total_cargas = cargas.count()
-
-    # Últimas cargas
-    recientes = cargas.order_by('-fecha_inicio')[:5]
-
+    
+    # Agrupar por mercado
+    por_mercado = {}
+    for item in calificaciones.values('mercado').annotate(total=Count('id')):
+        por_mercado[item['mercado']] = item['total']
+    
+    # Agrupar por divisa
+    por_divisa = {}
+    for item in calificaciones.values('divisa').annotate(total=Count('id')):
+        por_divisa[item['divisa']] = item['total']
+    
+    # Agrupar por tipo de carga
+    por_tipo_carga = {}
+    for item in cargas.values('tipo_carga').annotate(total=Count('id')):
+        por_tipo_carga[item['tipo_carga']] = item['total']
+    
+    # Calcular tasa de éxito
+    total_procesados = cargas.aggregate(Sum('registros_procesados'))['registros_procesados__sum'] or 0
+    total_exitosos = cargas.aggregate(Sum('registros_exitosos'))['registros_exitosos__sum'] or 0
+    tasa_exito = round((total_exitosos / total_procesados * 100), 2) if total_procesados > 0 else 0
+    
     return {
-        "total_calificaciones": total_calificaciones,
-        "total_cargas": total_cargas,
-        "ultimas_cargas": [
-            {
-                "id": c.id,
-                "archivo": c.archivo_nombre,
-                "estado": c.estado,
-                "fecha": c.fecha_inicio
-            }
-            for c in recientes
-        ]
+        'total_calificaciones': calificaciones.count(),
+        'total_cargas': cargas.count(),
+        'cargas_exitosas': cargas.filter(estado='COMPLETADO').count(),  # ← CORREGIDO
+        'cargas_con_errores': cargas.filter(estado='COMPLETADO_CON_ERRORES').count(),  # ← CORREGIDO
+        'tasa_exito': tasa_exito,
+        'por_mercado': por_mercado,
+        'por_divisa': por_divisa,
+        'por_tipo_carga': por_tipo_carga,
+        'ultimas_cargas': cargas.order_by('-fecha_inicio')[:5],
     }
+
+
 
 
 # -------------------------
 # AGRUPACIONES GENERALES
 # -------------------------
-def calificaciones_por_agrupacion(queryset, field):
-    return queryset.values(field).annotate(
-        total=Count("id")
-    ).order_by("-total")
-
+def calificaciones_por_agrupacion(queryset, campo):
+    """
+    Agrupa calificaciones por un campo específico.
+    """
+    return queryset.values(campo).annotate(
+        total=Count('id'),
+        valor_total=Sum('valor_historico')
+    ).order_by('-total')
 
 # -------------------------
 # ESTADÍSTICAS DE CARGAS MASIVAS
 # -------------------------
 def estadisticas_cargas(queryset):
-    total = queryset.count()
+    """
+    Calcula estadísticas de cargas masivas.
+    """
     return {
-        "total_cargas": total,
-        "pendientes": queryset.filter(estado="PENDING").count(),
-        "procesando": queryset.filter(estado="PROCESSING").count(),
-        "completadas": queryset.filter(estado="COMPLETED").count(),
-        "fallidas": queryset.filter(estado="FAILED").count(),
+        'total': queryset.count(),
+        'completadas': queryset.filter(estado='COMPLETADO').count(),
+        'con_errores': queryset.filter(estado='COMPLETADO_CON_ERRORES').count(),
+        'procesando': queryset.filter(estado='PROCESANDO').count(),
+        'total_registros': queryset.aggregate(Sum('registros_procesados'))['registros_procesados__sum'] or 0,
+        'total_exitosos': queryset.aggregate(Sum('registros_exitosos'))['registros_exitosos__sum'] or 0,
+        'total_fallidos': queryset.aggregate(Sum('registros_fallidos'))['registros_fallidos__sum'] or 0,
     }
+
 
 
 # -------------------------
