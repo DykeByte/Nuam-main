@@ -64,52 +64,51 @@ class Calificacion(models.Model):
 
 
 # ---------------------
-# Modelo: CargaMasiva (completo)
+# Modelo: CargaMasiva
 # ---------------------
-class CargaMasiva(models.Model):
-    ESTADO_CHOICES = [
-        ('PENDING', 'Pendiente'),
-        ('PROCESSING', 'Procesando'),
-        ('COMPLETED', 'Completado'),
-        ('FAILED', 'Fallido'),
-    ]
 
-    archivo_nombre = models.CharField(max_length=255)
+class CargaMasiva(models.Model):
+    TIPO_CARGA_CHOICES = [
+        ('FACTORES', 'Factores'),
+        ('MONITOR', 'Monitor'),
+    ]
+    
+    MERCADO_CHOICES = [
+        ('LOCAL', 'Local'),
+        ('INTERNACIONAL', 'Internacional'),
+        # Agregar los que necesitemos..
+    ]
+    
+    archivo_nombre = models.CharField(max_length=255, blank=True, null=True)
     archivo_path = models.CharField(max_length=500, blank=True, null=True)
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDING', db_index=True)
-    total_registros = models.IntegerField(default=0)
+    tipo_carga = models.CharField(
+        max_length=50, 
+        choices=TIPO_CARGA_CHOICES, 
+        default='FACTORES'
+    )
+    mercado = models.CharField(
+        max_length=50, 
+        choices=MERCADO_CHOICES, 
+        default='LOCAL'
+    )
+    iniciado_por = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE,
+        related_name='cargas_masivas',
+        verbose_name="Iniciado por",
+    )
+    fecha_inicio = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=50, default='PENDIENTE')
     registros_procesados = models.IntegerField(default=0)
     registros_exitosos = models.IntegerField(default=0)
     registros_fallidos = models.IntegerField(default=0)
-    mensaje_error = models.TextField(blank=True, null=True)
-    iniciado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='cargas_iniciadas')
-    fecha_inicio = models.DateTimeField(auto_now_add=True)
-    fecha_fin = models.DateTimeField(null=True, blank=True)
-
+    
     class Meta:
-        db_table = 'api_cargas_masivas'
+        db_table = 'carga_masiva'
         ordering = ['-fecha_inicio']
-        verbose_name = 'Carga Masiva'
-        verbose_name_plural = 'Cargas Masivas'
-        indexes = [
-            models.Index(fields=['estado', 'fecha_inicio']),
-        ]
-
+    
     def __str__(self):
-        return f"Carga {self.id} - {self.archivo_nombre} ({self.estado})"
-
-    @property
-    def duracion(self):
-        if self.fecha_fin:
-            return (self.fecha_fin - self.fecha_inicio).total_seconds()
-        return None
-
-    @property
-    def porcentaje_progreso(self):
-        if self.total_registros > 0:
-            return (self.registros_procesados / self.total_registros) * 100
-        return 0
-
+        return f"Carga {self.id} - {self.tipo_carga} - {self.estado}"
 
 # ---------------------
 # Modelo: CalificacionTributaria (detallado con factores 8..37)

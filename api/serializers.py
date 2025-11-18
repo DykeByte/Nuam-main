@@ -1,158 +1,253 @@
-#api/serializers.py 
-
+# api/serializers.py
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from api.models import Calificacion, CalificacionTributaria, CargaMasiva, LogOperacion, LogAuditoria, Divisa
+from api.models import (
+    CalificacionTributaria, 
+    CargaMasiva, 
+    LogOperacion,
+    Calificacion,
+    Divisa,
+    LogAuditoria
+)
 from accounts.models import Perfil
 
+
+# ========================
+# User Serializers
+# ========================
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer para el modelo User"""
+    """Serializer básico para el modelo User"""
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'date_joined', 'last_login']
-        read_only_fields = ['id', 'date_joined', 'last_login']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined']
+        read_only_fields = ['id', 'date_joined']
+
+
+class UserDetailSerializer(UserSerializer):
+    """Serializer detallado con perfil"""
+    perfil = serializers.SerializerMethodField()
+    total_calificaciones = serializers.SerializerMethodField()
+    total_cargas = serializers.SerializerMethodField()
+    
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ['perfil', 'total_calificaciones', 'total_cargas']
+    
+    def get_perfil(self, obj):
+        try:
+            return PerfilSerializer(obj.perfil).data
+        except:
+            return None
+    
+    def get_total_calificaciones(self, obj):
+        return obj.calificaciones_tributarias.count()
+    
+    def get_total_cargas(self, obj):
+        return obj.cargas_masivas.count()
 
 
 class PerfilSerializer(serializers.ModelSerializer):
-    """Serializer para Perfil de usuario"""
-    user = UserSerializer(read_only=True)
-    username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
+    usuario_username = serializers.CharField(source='usuario.username', read_only=True)
     
     class Meta:
         model = Perfil
-        fields = ['user', 'username', 'email', 'rut', 'nombre_completo', 'aprobado']
-        read_only_fields = ['aprobado']
+        fields = '__all__'
+        read_only_fields = ['usuario']
 
 
-class CalificacionTributariaSerializer(serializers.ModelSerializer):
-    """Serializer para CalificacionTributaria con todos los campos"""
-    usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
-    carga_masiva_nombre = serializers.CharField(source='carga_masiva.nombre_archivo', read_only=True, allow_null=True)
+class RegistroSerializer(serializers.ModelSerializer):
+    """Serializer para registro de nuevos usuarios"""
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'}, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, style={'input_type': 'password'})
     
-    # Campos calculados
-    url = serializers.HyperlinkedIdentityField(view_name='api:calificacion-detail')
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'password_confirm', 'first_name', 'last_name']
+    
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Este email ya está registrado")
+        return value
+    
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Este nombre de usuario ya existe")
+        return value
+    
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError({"password": "Las contraseñas no coinciden"})
+        return data
+    
+    def create(self, validated_data):
+        validated_data.pop('password_confirm')
+        user = User.objects.create_user(**validated_data)
+        return user
+
+
+# ========================
+# Calificación Tributaria Serializers
+# ========================
+class CalificacionTributariaSerializer(serializers.ModelSerializer):
+    """Serializer completo para CalificacionTributaria"""
+    usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
+    carga_nombre = serializers.CharField(source='carga_masiva.archivo_nombre', read_only=True, allow_null=True)
     
     class Meta:
         model = CalificacionTributaria
         fields = '__all__'
-        read_only_fields = ['id', 'usuario', 'created_at', 'updated_at', 'usuario_nombre', 'carga_masiva_nombre', 'url']
-    
-    def validate(self, data):
-        """Validaciones personalizadas"""
-        # Validar que los factores estén en rango válido si se proporcionan
-        for i in range(8, 38):
-            factor_name = f'factor_{i}'
-            factor_value = data.get(factor_name)
-            if factor_value is not None and (factor_value < 0 or factor_value > 10):
-                raise serializers.ValidationError({
-                    factor_name: f"El {factor_name} debe estar entre 0 y 10"
-                })
-        
-        return data
+        read_only_fields = ['usuario', 'created_at', 'updated_at']
 
 
 class CalificacionTributariaListSerializer(serializers.ModelSerializer):
-    """Serializer simplificado para listados (sin todos los factores)"""
+    """Versión simplificada para listados"""
     usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
-    url = serializers.HyperlinkedIdentityField(view_name='api:calificacion-detail')
     
     class Meta:
         model = CalificacionTributaria
         fields = [
-            'id', 'url', 'usuario_nombre', 'corredor_dueno', 'rut_es_el_manual',
-            'ano_comercial', 'mercado', 'instrumento', 'fecha_pago',
-            'valor_historico', 'divisa', 'created_at', 'updated_at'
+            'id', 'corredor_dueno', 'instrumento', 'mercado', 'divisa',
+            'valor_historico', 'fecha_pago', 'usuario_nombre', 'created_at', 'es_local'
         ]
 
 
+class CalificacionTributariaCreateSerializer(serializers.ModelSerializer):
+    """Serializer para crear calificaciones manualmente"""
+    
+    class Meta:
+        model = CalificacionTributaria
+        exclude = ['usuario', 'carga_masiva', 'created_at', 'updated_at']
+
+
+# ========================
+# Carga Masiva Serializers
+# ========================
 class CargaMasivaSerializer(serializers.ModelSerializer):
     """Serializer para CargaMasiva"""
-    usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
-    calificaciones_count = serializers.SerializerMethodField()
-    tasa_exito = serializers.SerializerMethodField()
-    url = serializers.HyperlinkedIdentityField(view_name='api:carga-detail')
+    iniciado_por_nombre = serializers.CharField(source='iniciado_por.username', read_only=True)
+    porcentaje_exito = serializers.SerializerMethodField()
     
     class Meta:
         model = CargaMasiva
         fields = '__all__'
-        read_only_fields = ['id', 'usuario', 'fecha_carga', 'usuario_nombre', 'url']
+        read_only_fields = ['iniciado_por', 'fecha_inicio', 'registros_procesados', 
+                           'registros_exitosos', 'registros_fallidos', 'estado']
     
-    def get_calificaciones_count(self, obj):
-        """Retorna el número de calificaciones asociadas"""
-        return obj.calificaciontributaria_set.count()
-    
-    def get_tasa_exito(self, obj):
-        """Calcula la tasa de éxito en porcentaje"""
-        if obj.registros_procesados > 0:
-            return round((obj.registros_exitosos / obj.registros_procesados) * 100, 2)
-        return 0
+    def get_porcentaje_exito(self, obj):
+        if obj.registros_procesados == 0:
+            return 0
+        return round((obj.registros_exitosos / obj.registros_procesados) * 100, 2)
 
 
+class CargaMasivaDetailSerializer(serializers.ModelSerializer):
+    """Serializer detallado con calificaciones asociadas"""
+    iniciado_por_nombre = serializers.CharField(source='iniciado_por.username', read_only=True)
+    porcentaje_exito = serializers.SerializerMethodField()
+    calificaciones = CalificacionTributariaListSerializer(
+        source='calificaciones_tributarias', 
+        many=True, 
+        read_only=True
+    )
+    total_calificaciones = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CargaMasiva
+        fields = '__all__'  # Incluye todos los campos del modelo
+    
+    def get_porcentaje_exito(self, obj):
+        if obj.registros_procesados == 0:
+            return 0
+        return round((obj.registros_exitosos / obj.registros_procesados) * 100, 2)
+    
+    def get_total_calificaciones(self, obj):
+        return obj.calificaciones_tributarias.count()
+
+
+# ========================
+# Log Serializers
+# ========================
 class LogOperacionSerializer(serializers.ModelSerializer):
-    """Serializer para LogOperacion"""
     usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
-    operacion_display = serializers.CharField(source='get_operacion_display', read_only=True)
+    calificacion_detalle = serializers.SerializerMethodField()
     
     class Meta:
         model = LogOperacion
         fields = '__all__'
-        read_only_fields = ['id', 'fecha_hora', 'usuario_nombre']
+        read_only_fields = ['fecha_hora']
+    
+    def get_calificacion_detalle(self, obj):
+        if obj.calificacion:
+            return {
+                'id': obj.calificacion.id,
+                'instrumento': obj.calificacion.instrumento,
+                'corredor': obj.calificacion.corredor_dueno
+            }
+        return None
 
 
-class RegistroSerializer(serializers.Serializer):
-    """Serializer para registro de nuevos usuarios via API"""
-    username = serializers.CharField(max_length=150, min_length=3)
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True, min_length=8, style={'input_type': 'password'})
-    password2 = serializers.CharField(write_only=True, min_length=8, style={'input_type': 'password'})
-    nombre_completo = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    rut = serializers.CharField(max_length=12, required=False, allow_blank=True)
+class LogAuditoriaSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
     
-    def validate_username(self, value):
-        """Validar username"""
-        import re
-        if not re.match(r'^[a-zA-Z][a-zA-Z0-9_]*$', value):
-            raise serializers.ValidationError(
-                "El username debe comenzar con letra y solo contener letras, números y guiones bajos"
-            )
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Este username ya existe")
-        return value
-    
-    def validate_email(self, value):
-        """Validar email"""
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Este email ya está registrado")
-        return value.lower()
-    
-    def validate(self, data):
-        """Validar que las contraseñas coincidan"""
-        if data['password'] != data['password2']:
-            raise serializers.ValidationError({"password2": "Las contraseñas no coinciden"})
-        return data
-    
-    def create(self, validated_data):
-        """Crear usuario y perfil"""
-        validated_data.pop('password2')
-        nombre_completo = validated_data.pop('nombre_completo', '')
-        rut = validated_data.pop('rut', '')
-        
-        user = User.objects.create_user(**validated_data)
-        
-        # Actualizar perfil
-        user.perfil.nombre_completo = nombre_completo
-        user.perfil.rut = rut
-        user.perfil.save()
-        
-        return user
+    class Meta:
+        model = LogAuditoria
+        fields = '__all__'
+        read_only_fields = ['timestamp']
 
 
+# ========================
+# Calificación General Serializers
+# ========================
+class CalificacionSerializer(serializers.ModelSerializer):
+    creado_por_nombre = serializers.CharField(source='creado_por.username', read_only=True)
+    
+    class Meta:
+        model = Calificacion
+        fields = '__all__'
+        read_only_fields = ['creado_por', 'creado_en', 'actualizado_en']
+
+
+# ========================
+# Divisa Serializers
+# ========================
+class DivisaSerializer(serializers.ModelSerializer):
+    """Serializer para divisas"""
+    
+    class Meta:
+        model = Divisa
+        fields = '__all__'
+        read_only_fields = ['fecha_actualizacion']
+
+
+# ========================
+# Estadísticas Serializers
+# ========================
 class EstadisticasSerializer(serializers.Serializer):
     """Serializer para estadísticas del dashboard"""
     total_calificaciones = serializers.IntegerField()
     total_cargas = serializers.IntegerField()
-    cargas_ultimo_mes = serializers.IntegerField()
-    calificaciones_por_mercado = serializers.DictField()
+    cargas_exitosas = serializers.IntegerField()
+    cargas_con_errores = serializers.IntegerField()
+    tasa_exito = serializers.FloatField()
+    por_mercado = serializers.DictField()
+    por_divisa = serializers.DictField()
+    por_tipo_carga = serializers.DictField()
     ultimas_cargas = CargaMasivaSerializer(many=True)
+
+
+class CargaMasivaUploadSerializer(serializers.Serializer):
+    """Serializer para carga de archivos"""
+    archivo = serializers.FileField()
+    tipo_carga = serializers.ChoiceField(choices=['FACTORES', 'MONITOR'])
+    mercado = serializers.ChoiceField(choices=['LOCAL', 'INTERNACIONAL'])
+    
+    def validate_archivo(self, value):
+        # Validar tamaño (5MB máximo)
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("El archivo no debe superar 5MB")
+        
+        # Validar extensión
+        nombre = value.name.lower()
+        if not (nombre.endswith('.xlsx') or nombre.endswith('.xls') or nombre.endswith('.csv')):
+            raise serializers.ValidationError("Solo se aceptan archivos .xlsx, .xls o .csv")
+        
+        return value

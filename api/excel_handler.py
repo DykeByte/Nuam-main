@@ -1,7 +1,10 @@
-# accounts/excel_handler.py - VERSIÓN ACTUALIZADA
+# api/excel_handler.py - VERSIÓN CORREGIDA
 import pandas as pd
 from datetime import datetime
 from api.models import CalificacionTributaria, CargaMasiva, LogOperacion
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ExcelHandler:
@@ -11,43 +14,73 @@ class ExcelHandler:
         self.archivo = archivo
         self.tipo_carga = tipo_carga
         self.usuario = usuario
+        self.mercado = None  # Se puede asignar después
         self.errores = []
         self.registros_exitosos = 0
         self.registros_fallidos = 0
         
+        logger.info(f"📦 ExcelHandler creado:")
+        logger.info(f"   - Archivo: {archivo.name}")
+        logger.info(f"   - Tipo: {tipo_carga}")
+        logger.info(f"   - Usuario: {usuario.username}")
+        
     def procesar(self):
         """Procesa el archivo Excel y crea las calificaciones"""
+        logger.info("🔄 Iniciando procesamiento de archivo...")
+        
         try:
             # Leer el archivo Excel
+            logger.info("📖 Leyendo archivo Excel...")
             df = pd.read_excel(self.archivo)
+            logger.info(f"✅ Archivo leído: {len(df)} filas, {len(df.columns)} columnas")
+            logger.info(f"   Columnas encontradas: {list(df.columns)}")
             
             # Limpiar nombres de columnas (quitar espacios)
             df.columns = df.columns.str.strip()
             
             # Crear el registro de carga masiva
+            logger.info("💾 Creando registro de CargaMasiva...")
             carga = CargaMasiva.objects.create(
-                usuario=self.usuario,
+                iniciado_por=self.usuario,  # ← CORREGIDO: era 'usuario'
                 tipo_carga=self.tipo_carga,
-                nombre_archivo=self.archivo.name,
-                registros_procesados=len(df)
+                mercado=self.mercado or 'LOCAL',  # ← AGREGADO
+                archivo_nombre=self.archivo.name,  # ← CORREGIDO: era 'nombre_archivo'
+                archivo_path='',  # Por ahora vacío
+                registros_procesados=len(df),
+                estado='PROCESANDO'  # ← AGREGADO
             )
+            logger.info(f"✅ CargaMasiva creada con ID: {carga.id}")
             
             # Procesar cada fila
+            logger.info(f"🔄 Procesando {len(df)} filas...")
             for index, row in df.iterrows():
                 try:
                     self._procesar_fila(row, carga, index + 2)
                     self.registros_exitosos += 1
+                    
+                    if (index + 1) % 10 == 0:
+                        logger.debug(f"   Procesadas {index + 1}/{len(df)} filas...")
+                        
                 except Exception as e:
                     self.registros_fallidos += 1
-                    self.errores.append(f"Fila {index + 2}: {str(e)}")
+                    error_msg = f"Fila {index + 2}: {str(e)}"
+                    self.errores.append(error_msg)
+                    logger.warning(f"⚠️ {error_msg}")
             
             # Actualizar el registro de carga
+            logger.info("💾 Actualizando estadísticas de carga...")
             carga.registros_exitosos = self.registros_exitosos
             carga.registros_fallidos = self.registros_fallidos
-            carga.errores_detalle = "\n".join(self.errores) if self.errores else ""
+            carga.estado = 'COMPLETADO' if self.registros_fallidos == 0 else 'COMPLETADO_CON_ERRORES'
             carga.save()
             
+            logger.info(f"✅ Procesamiento completado:")
+            logger.info(f"   - Exitosos: {self.registros_exitosos}")
+            logger.info(f"   - Fallidos: {self.registros_fallidos}")
+            logger.info(f"   - Estado: {carga.estado}")
+            
             # Crear log de la operación
+            logger.debug("📝 Creando log de operación...")
             LogOperacion.objects.create(
                 usuario=self.usuario,
                 carga_masiva=carga,
@@ -55,18 +88,23 @@ class ExcelHandler:
                 datos_nuevos={
                     'archivo': self.archivo.name,
                     'tipo': self.tipo_carga,
+                    'mercado': self.mercado or 'LOCAL',
                     'exitosos': self.registros_exitosos,
-                    'fallidos': self.registros_fallidos
+                    'fallidos': self.registros_fallidos,
+                    'errores': self.errores[:10]  # Solo primeros 10 errores
                 }
             )
             
             return carga
             
         except Exception as e:
+            logger.error(f"❌ Error crítico al procesar archivo: {str(e)}", exc_info=True)
             raise Exception(f"Error al procesar archivo: {str(e)}")
     
     def _procesar_fila(self, row, carga, num_fila):
         """Procesa una fila individual del Excel"""
+        
+        logger.debug(f"   Procesando fila {num_fila}...")
         
         # Crear la calificación tributaria
         calificacion = CalificacionTributaria(
@@ -78,7 +116,7 @@ class ExcelHandler:
         calificacion.corredor_dueno = self._get_value(row, 'corredor_dueno', '')
         calificacion.rut_es_el_manual = self._get_value(row, 'rut_es_el_manual', '')
         calificacion.ano_comercial = self._get_value(row, 'ano_comercial', '')
-        calificacion.mercado = self._get_value(row, 'mercado', '')
+        calificacion.mercado = self._get_value(row, 'mercado', self.mercado or 'LOCAL')
         calificacion.instrumento = self._get_value(row, 'instrumento', '')
         calificacion.descripcion = self._get_value(row, 'descripcion', '')
         calificacion.tipo_sociedad = self._get_value(row, 'tipo_sociedad', '')
@@ -100,12 +138,14 @@ class ExcelHandler:
         calificacion.es_local = self._get_bool_value(row, 'es_local', default=True)
         
         # Procesar factores (del 8 al 37)
-        for i in range(8, 38):
-            factor_name = f'factor_{i}'
-            setattr(calificacion, factor_name, self._get_decimal_value(row, factor_name))
+        if self.tipo_carga == 'FACTORES':
+            for i in range(8, 38):
+                factor_name = f'factor_{i}'
+                setattr(calificacion, factor_name, self._get_decimal_value(row, factor_name))
         
         # Guardar
         calificacion.save()
+        logger.debug(f"   ✅ Calificación guardada: {calificacion.id}")
         
         return calificacion
     
