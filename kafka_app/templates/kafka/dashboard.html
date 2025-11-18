@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- Estado del Cluster -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body d-flex align-items-center">
+            <h4 class="me-3"><i class="bi bi-hdd-network"></i> Estado del Cluster</h4>
+            {% if cluster_health == "healthy" %}
+                <span class="badge bg-success">Healthy</span>
+            {% else %}
+                <span class="badge bg-danger">Unhealthy</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Métricas principales -->
+    <div class="row text-center mb-4">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body bg-primary text-white rounded">
+                    <h2>{{ brokers_count }}</h2>
+                    <p>Brokers Activos</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body bg-info text-white rounded">
+                    <h2>{{ topics_count }}</h2>
+                    <p>Topics</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body bg-success text-white rounded">
+                    <h2>{{ messages_sent }}</h2>
+                    <p>Mensajes Enviados</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Tabla de Topics -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-list-ul"></i> Topics Configurados</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Particiones</th>
+                        <th>Lag</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if topics_info %}
+                        {% for t in topics_info %}
+                            <tr>
+                                <td>{{ t.name }}</td>
+                                <td>{{ t.partitions }}</td>
+                                <td>{{ t.lag }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary">Ver</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-3">No hay topics disponibles</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Métricas inferiores -->
+    <div class="row text-center mb-4">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-3">
+                <h6>Total Mensajes</h6>
+                <h3>{{ total_messages }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-3">
+                <h6>Total Errores</h6>
+                <h3 class="text-danger">{{ total_errors }}</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm p-3">
+                <h6>DLQ Messages</h6>
+                <h3 class="text-warning">{{ dlq_messages }}</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Enlaces útiles -->
+    <div class="card shadow-sm mb-5">
+        <div class="card-header">
+            <h5><i class="bi bi-link-45deg"></i> Enlaces Útiles</h5>
+        </div>
+        <div class="card-body">
+            <p><a href="http://localhost:8080" target="_blank" class="text-decoration-none">
+                <i class="bi bi-box-arrow-up-right"></i> Kafka UI - Interfaz gráfica para Kafka
+            </a></p>
+
+            <p><a href="http://localhost:9090" target="_blank" class="text-decoration-none">
+                <i class="bi bi-graph-up"></i> Métricas Prometheus
+            </a></p>
+
+            <p><a href="/kafka/health/" target="_blank" class="text-decoration-none">
+                <i class="bi bi-heart-pulse-fill"></i> Health Check API
+            </a></p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

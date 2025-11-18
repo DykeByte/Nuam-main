@@ -44,14 +44,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',  # Nuestra app de cuentas
-    'api',
+    'api', # app de API
+    'kafka_app', # Nuestra app para kafka
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'corsheaders',
     'drf_yasg',  # Swagger documentación
-    'widget_tweaks'
+    'widget_tweaks',
+
 ]
 
 MIDDLEWARE = [
@@ -360,3 +362,57 @@ LOGGING = {
         },
     },
 }
+
+
+from decouple import config
+
+# Kafka Configuration
+KAFKA_BOOTSTRAP_SERVERS = config('KAFKA_BOOTSTRAP_SERVERS', default='localhost:9092').split(',')
+
+# Topics principales
+KAFKA_TOPICS = {
+    'CARGA_MASIVA': 'nuam.carga-masiva.events',
+    'CALIFICACION': 'nuam.calificacion.events',
+    'AUDITORIA': 'nuam.auditoria.logs',
+    'NOTIFICACIONES': 'nuam.notificaciones.queue',
+    'ERRORES': 'nuam.errores.dlq',  # Dead Letter Queue
+}
+
+# Producer Configuration
+KAFKA_PRODUCER_CONFIG = {
+    'bootstrap_servers': KAFKA_BOOTSTRAP_SERVERS,
+    'acks': 'all',  # Garantiza que todos los brokers reciban el mensaje
+    'retries': 3,
+    'max_in_flight_requests_per_connection': 1,
+    'compression_type': 'gzip',
+    'linger_ms': 10,  # Espera 10ms para batchear mensajes
+    'batch_size': 16384,
+    'buffer_memory': 33554432,
+    'value_serializer': lambda v: json.dumps(v).encode('utf-8'),
+    'key_serializer': lambda k: k.encode('utf-8') if k else None,
+}
+
+# Consumer Configuration
+KAFKA_CONSUMER_CONFIG = {
+    'bootstrap_servers': KAFKA_BOOTSTRAP_SERVERS,
+    'auto_offset_reset': 'earliest',
+    'enable_auto_commit': False,  # Manual commit para mayor control
+    'group_id': 'nuam-consumer-group',
+    'max_poll_records': 100,
+    'session_timeout_ms': 30000,
+    'heartbeat_interval_ms': 10000,
+    'value_deserializer': lambda m: json.loads(m.decode('utf-8')),
+    'key_deserializer': lambda k: k.decode('utf-8') if k else None,
+}
+
+# Retry Configuration
+KAFKA_RETRY_CONFIG = {
+    'max_retries': 3,
+    'backoff_multiplier': 2,
+    'initial_backoff_seconds': 1,
+}
+
+# Monitoring
+KAFKA_ENABLE_METRICS = config('KAFKA_ENABLE_METRICS', default=True, cast=bool)
+
+import json

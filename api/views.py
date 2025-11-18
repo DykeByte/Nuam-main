@@ -7,8 +7,23 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Q, Sum, Avg
 from django.utils import timezone
-
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from accounts.models import Perfil
+import pandas as pd
+
+# ============================================
+# IMPORTAR PRODUCTORES KAFKA
+# ============================================
+from kafka_app.producers import (
+    carga_masiva_producer,
+    calificacion_producer,
+    auditoria_producer,
+    notificacion_producer
+)
+
+
 from api.models import (
     CalificacionTributaria, 
     CargaMasiva, 
@@ -45,6 +60,7 @@ from api.excel_handler import ExcelHandler
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 
 # ===============================
@@ -416,3 +432,211 @@ def health_check(request):
         'timestamp': timezone.now().isoformat(),
         'version': '1.0.0'
     })
+
+
+@login_required
+def nueva_carga_masiva(request):
+    """
+    Vista para procesar carga masiva de datos
+    MODIFICAR TU VISTA EXISTENTE PARA AÑADIR KAFKA
+    """
+    if request.method == 'POST':
+        archivo = request.FILES.get('archivo_excel')
+        
+        if not archivo:
+            return JsonResponse({'error': 'No se proporcionó archivo'}, status=400)
+        
+        # Crear registro de carga
+        carga = CargaMasiva.objects.create(
+            usuario=request.user,
+            nombre_archivo=archivo.name,
+            estado='PROCESANDO'
+        )
+        
+        # 🔥 KAFKA: Publicar evento de inicio
+        carga_masiva_producer.publish_carga_iniciada(
+            carga_id=carga.id,
+            usuario=request.user.username,
+            filename=archivo.name
+        )
+        
+        # 🔥 KAFKA: Registrar auditoría
+        auditoria_producer.publish_log(
+            usuario=request.user.username,
+            accion='CARGA_MASIVA_INICIADA',
+            recurso=f'carga_masiva/{carga.id}',
+            detalles={'filename': archivo.name}
+        )
+        
+        try:
+            # Medir tiempo de procesamiento
+            start_time = time.time()
+            
+            # Procesar archivo Excel (tu lógica existente)
+            df = pd.read_excel(archivo)
+            
+            total_registros = len(df)
+            exitosos = 0
+            fallidos = 0
+            
+            # Procesar cada fila
+            for index, row in df.iterrows():
+                try:
+                    # Crear calificación (tu lógica existente)
+                    calificacion = CalificacionTributaria.objects.create(
+                        nemotecnico=row['nemotecnico'],
+                        fecha_valor=row['fecha_valor'],
+                        divisa=row['divisa'],
+                        valor_nominal_usd=row['valor_nominal_usd'],
+                        # ... otros campos
+                    )
+                    
+                    # 🔥 KAFKA: Publicar evento de calificación creada
+                    calificacion_producer.publish_calificacion_creada({
+                        'id': calificacion.id,
+                        'nemotecnico': calificacion.nemotecnico,
+                        'divisa': calificacion.divisa,
+                        'valor_nominal_usd': float(calificacion.valor_nominal_usd),
+                        'carga_masiva_id': carga.id
+                    })
+                    
+                    exitosos += 1
+                    
+                except Exception as e:
+                    fallidos += 1
+                    print(f"Error en fila {index}: {e}")
+            
+            # Calcular duración
+            duracion = time.time() - start_time
+            
+            # Actualizar registro de carga
+            carga.total_registros = total_registros
+            carga.exitosos = exitosos
+            carga.fallidos = fallidos
+            carga.estado = 'COMPLETADO'
+            carga.save()
+            
+            # 🔥 KAFKA: Publicar evento de carga completada
+            carga_masiva_producer.publish_carga_completada(
+                carga_id=carga.id,
+                total_registros=total_registros,
+                exitosos=exitosos,
+                fallidos=fallidos,
+                duracion_segundos=duracion
+            )
+            
+            # 🔥 KAFKA: Enviar notificación de éxito
+            notificacion_producer.publish_notificacion(
+                usuario_id=request.user.id,
+                tipo='IN_APP',
+                mensaje=f'Carga masiva completada: {exitosos} exitosos, {fallidos} fallidos',
+                prioridad='normal'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Carga completada: {exitosos} exitosos, {fallidos} fallidos',
+                'carga_id': carga.id,
+                'duracion_segundos': round(duracion, 2)
+            })
+            
+        except Exception as e:
+            # Actualizar estado de carga
+            carga.estado = 'FALLIDO'
+            carga.save()
+            
+            # 🔥 KAFKA: Publicar evento de carga fallida
+            carga_masiva_producer.publish_carga_fallida(
+                carga_id=carga.id,
+                error=str(e)
+            )
+            
+            # 🔥 KAFKA: Notificación de error
+            notificacion_producer.publish_notificacion(
+                usuario_id=request.user.id,
+                tipo='EMAIL',
+                mensaje=f'Error en carga masiva: {str(e)}',
+                prioridad='high'
+            )
+            
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return render(request, 'api/nueva_carga.html')
+
+
+
+
+@login_required
+def actualizar_calificacion(request, calificacion_id):
+    """
+    Vista para actualizar calificación
+    EJEMPLO DE INTEGRACIÓN CON KAFKA
+    """
+    if request.method == 'POST':
+        try:
+            calificacion = CalificacionTributaria.objects.get(id=calificacion_id)
+            
+            # Guardar valores anteriores para cambios
+            cambios = {}
+            
+            # Actualizar campos (ejemplo)
+            if 'valor_nominal_usd' in request.POST:
+                old_value = calificacion.valor_nominal_usd
+                new_value = request.POST['valor_nominal_usd']
+                if old_value != new_value:
+                    cambios['valor_nominal_usd'] = {
+                        'old': float(old_value),
+                        'new': float(new_value)
+                    }
+                    calificacion.valor_nominal_usd = new_value
+            
+            calificacion.save()
+            
+            # 🔥 KAFKA: Publicar evento de actualización
+            if cambios:
+                calificacion_producer.publish_calificacion_actualizada(
+                    calificacion_id=calificacion.id,
+                    cambios=cambios
+                )
+                
+                # 🔥 KAFKA: Registrar auditoría
+                auditoria_producer.publish_log(
+                    usuario=request.user.username,
+                    accion='CALIFICACION_ACTUALIZADA',
+                    recurso=f'calificacion/{calificacion.id}',
+                    detalles={'cambios': cambios}
+                )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Calificación actualizada'
+            })
+            
+        except CalificacionTributaria.DoesNotExist:
+            return JsonResponse({
+                'error': 'Calificación no encontrada'
+            }, status=404)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+# ============================================
+# VISTA PARA MONITOREO DE KAFKA
+# ============================================
+@login_required
+def kafka_metrics_view(request):
+    """
+    Vista para mostrar métricas de Kafka
+    Acceder a: http://localhost:8000/api/kafka/metrics
+    """
+    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+    from django.http import HttpResponse
+    
+    metrics = generate_latest()
+    return HttpResponse(
+        metrics,
+        content_type=CONTENT_TYPE_LATEST
+    )
