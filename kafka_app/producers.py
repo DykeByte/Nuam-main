@@ -12,7 +12,7 @@ from kafka.errors import KafkaError, KafkaTimeoutError
 from django.conf import settings
 from prometheus_client import Counter, Histogram
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('kafka_app.producers')
 
 # ============================================
 # MÉTRICAS PROMETHEUS

@@ -13,6 +13,10 @@ import pandas as pd
 from django.contrib.auth.decorators import login_required
 from api.services import registrar_log
 
+import logging
+
+# Configurar logger
+logger = logging.getLogger('api')
 
 
 from api.utils.error_recovery import (
@@ -48,12 +52,6 @@ from api.serializers import (
 )
 
 from api.excel_handler import ExcelHandler
-
-import logging
-
-logger = logging.getLogger(__name__)
-
-
 
 # ===============================
 # Paginación Personalizada

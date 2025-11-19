@@ -66,6 +66,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'nuam.middleware.logging_middleware.RequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'nuam.urls'
@@ -266,8 +267,9 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
 
 
-    # ============================================
-# CONFIGURACIÓN DE LOGGING
+# ============================================
+# CONFIGURACIÓN DE LOGGING AVANZADO
+# Mejorado: 19/11/2025
 # ============================================
 import os
 
@@ -338,32 +340,85 @@ LOGGING = {
             'backupCount': 5,
             'formatter': 'verbose',
         },
+        # ===== NUEVOS HANDLERS =====
+        'file_kafka': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'kafka.log'),
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'file_errors': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'errors.log'),
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        'file_security': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOGS_DIR, 'security.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file_general'],
+            'handlers': ['console', 'file_general', 'file_errors'],
             'level': 'INFO',
             'propagate': False,
         },
+        'django.request': {
+            'handlers': ['file_errors'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['file_security'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
         'api': {
-            'handlers': ['console', 'file_api'],
+            'handlers': ['console', 'file_api', 'file_errors'],
             'level': 'DEBUG',
             'propagate': False,
         },
         'accounts': {
-            'handlers': ['console', 'file_accounts', 'file_carga'],
+            'handlers': ['console', 'file_accounts', 'file_errors'],
             'level': 'DEBUG',
             'propagate': False,
         },
-        # Para el excel_handler específicamente
         'api.excel_handler': {
-        'handlers': ['console', 'file_carga'],
-        'level': 'DEBUG',
-        'propagate': False,
+            'handlers': ['console', 'file_carga', 'file_errors'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # ===== NUEVOS LOGGERS =====
+        'kafka_app': {
+            'handlers': ['console', 'file_kafka', 'file_errors'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'kafka_app.producers': {
+            'handlers': ['console', 'file_kafka', 'file_errors'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'kafka_app.consumers': {
+            'handlers': ['console', 'file_kafka', 'file_errors'],
+            'level': 'DEBUG',
+            'propagate': False,
         },
     },
+    'root': {
+        'handlers': ['console', 'file_general', 'file_errors'],
+        'level': 'INFO',
+    },
 }
-
 
 # ============================================
 # KAFKA CONFIGURATION

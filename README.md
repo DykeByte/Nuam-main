@@ -1,115 +1,83 @@
-================================================================================
-                    NUAM - SISTEMA DE GESTIÓN DE 
-              CALIFICACIONES TRIBUTARIAS DE INSTRUMENTOS FINANCIEROS
-================================================================================
+NUAM - Sistema de Gestión de Calificaciones Tributarias de Instrumentos Financieros
+----------------------------------------------------------------------------------
 
 Aplicación web Django para gestión de calificaciones tributarias con soporte 
 para cargas masivas Excel, procesamiento asíncrono con Kafka y seguridad SSL.
 
-================================================================================
 CARACTERÍSTICAS PRINCIPALES
-================================================================================
+---------------------------
+- CRUD completo de calificaciones tributarias
+- Cargas masivas desde archivos Excel (hasta 10,000 registros)
+- Soporte multi-divisa (USD, CLP, COP, PEN, EUR)
+- API REST con autenticación JWT
+- Procesamiento asíncrono con Apache Kafka
+- Certificados SSL autofirmados con renovación automática
+- Dashboard con estadísticas en tiempo real
+- Auditoría completa de operaciones
+- Documentación API con Swagger
 
-✓ CRUD completo de calificaciones tributarias
-✓ Cargas masivas desde archivos Excel (hasta 10,000 registros)
-✓ Soporte multi-divisa (USD, CLP, COP, PEN, EUR)
-✓ API REST con autenticación JWT
-✓ Procesamiento asíncrono con Apache Kafka
-✓ Certificados SSL autofirmados con renovación automática
-✓ Dashboard con estadísticas en tiempo real
-✓ Auditoría completa de operaciones
-✓ Documentación API con Swagger
-
-================================================================================
 STACK TECNOLÓGICO
-================================================================================
+-----------------
+- Backend: Django 5.2.8, Django REST Framework 3.16.1, PostgreSQL
+- Mensajería: Apache Kafka 3.5
+- Frontend: Bootstrap 5, jQuery, Chart.js
+- DevOps: Docker, Docker Compose, Prometheus
 
-Backend:  Django 5.2.8, Django REST Framework 3.16.1, PostgreSQL
-Mensajería:  Apache Kafka 3.5
-Frontend:  Bootstrap 5, jQuery, Chart.js
-DevOps:  Docker, Docker Compose, Prometheus
-
-================================================================================
 INSTALACIÓN RÁPIDA
-================================================================================
-
-1. CLONAR REPOSITORIO
+------------------
+1. Clonar repositorio:
    git clone https://github.com/DykeByte/Nuam-main.git
    cd Nuam-main
 
-2. CREAR ENTORNO VIRTUAL
+2. Crear entorno virtual:
    python -m venv venv
-   source venv/bin/activate           # Linux/Mac
-   venv\Scripts\activate              # Windows
+   source venv/bin/activate  # Linux/Mac
+   venv\Scripts\activate     # Windows
 
-3. INSTALAR DEPENDENCIAS
+3. Instalar dependencias:
    pip install -r requirements.txt
 
-4. CONFIGURAR VARIABLES (.env)
-   SECRET_KEY=tu-secret-key-aqui
+4. Configurar variables (.env):
+   SECRET_KEY=tu-secret-key
    DEBUG=True
    DATABASE_URL=postgresql://user:pass@localhost:5432/nuam_db
    KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
-5. LEVANTAR SERVICIOS DOCKER
+5. Levantar servicios Docker:
    docker-compose up -d
 
-6. CONFIGURAR BASE DE DATOS
+6. Configurar base de datos:
    createdb nuam_db
    python manage.py migrate
    python manage.py createsuperuser
 
-7. INICIAR APLICACIÓN
-   # Terminal 1: Servidor
-   python manage.py runserver
-   
-   # Terminal 2: Consumidores Kafka
-   python manage.py run_kafka_consumers
+7. Iniciar aplicación:
+   - Servidor: python manage.py runserver
+   - Consumidores Kafka: python manage.py run_kafka_consumers
 
-================================================================================
 ACCESO A SERVICIOS
-================================================================================
+------------------
+- Aplicación Web: http://localhost:8000
+- Admin Django:   http://localhost:8000/admin
+- API REST:       http://localhost:8000/api/v1/
+- Swagger:        http://localhost:8000/swagger/
+- Dashboard Kafka: http://localhost:8000/kafka/dashboard/
+- Kafka UI:       http://localhost:8080
 
-Aplicación Web:        http://localhost:8000
-Admin Django:          http://localhost:8000/admin
-API REST:              http://localhost:8000/api/v1/
-Documentación Swagger: http://localhost:8000/swagger/
-Dashboard Kafka:       http://localhost:8000/kafka/dashboard/
-Kafka UI:              http://localhost:8080
-
-================================================================================
 API REST - EJEMPLOS
-================================================================================
-
->>> AUTENTICACIÓN (Obtener Token JWT)
-
-POST http://localhost:8000/api/v1/auth/token/
-Content-Type: application/json
-
+-------------------
+Autenticación (Obtener Token JWT):
+POST /api/v1/auth/token/
 {
   "username": "admin",
   "password": "tu_password"
 }
 
-Respuesta:
-{
-  "access": "eyJ0eXAiOiJKV1QiLCJh...",
-  "refresh": "eyJ0eXAiOiJKV1QiLCJh..."
-}
+Listar calificaciones:
+GET /api/v1/calificaciones/  (Authorization: Bearer tu_token)
 
-
->>> LISTAR CALIFICACIONES (con paginación)
-
-GET http://localhost:8000/api/v1/calificaciones/
-Authorization: Bearer tu_token_aqui
-
-
->>> CREAR CALIFICACIÓN
-
-POST http://localhost:8000/api/v1/calificaciones/
-Authorization: Bearer tu_token_aqui
-Content-Type: application/json
-
+Crear calificación:
+POST /api/v1/calificaciones/
 {
   "corredor_dueno": "Corredor ABC",
   "instrumento": "BONOS-2025",
@@ -119,216 +87,218 @@ Content-Type: application/json
   "fecha_pago": "2025-12-31"
 }
 
-
->>> SUBIR ARCHIVO EXCEL (Carga Masiva)
-
-POST http://localhost:8000/api/v1/cargas/upload/
-Authorization: Bearer tu_token_aqui
-Content-Type: multipart/form-data
-
+Subir archivo Excel (Carga Masiva):
+POST /api/v1/cargas/upload/ (multipart/form-data)
 archivo: datos.xlsx
 tipo_carga: FACTORES
 mercado: LOCAL
 
-
->>> FILTRAR Y BUSCAR
-
+Filtrar y buscar:
 GET /api/v1/calificaciones/?mercado=LOCAL&divisa=CLP
 GET /api/v1/calificaciones/?search=BONOS
 GET /api/v1/calificaciones/?ordering=-created_at
 GET /api/v1/calificaciones/?page=2&page_size=50
 
-================================================================================
 KAFKA - TOPICS Y EVENTOS
-================================================================================
+------------------------
+Topics configurados:
+- nuam.carga-masiva.events
+- nuam.calificacion.events
+- nuam.auditoria.logs
+- nuam.notificaciones.queue
+- nuam.errores.dlq
 
-TOPICS CONFIGURADOS:
+Consumidores:
+- Todos: python manage.py run_kafka_consumers
+- Específicos: 
+  --consumer carga
+  --consumer calificacion
+  --consumer auditoria
 
-nuam.carga-masiva.events     -> Eventos de cargas masivas
-nuam.calificacion.events     -> Creación/actualización/eliminación
-nuam.auditoria.logs          -> Logs de auditoría
-nuam.notificaciones.queue    -> Notificaciones a usuarios
-nuam.errores.dlq             -> Dead Letter Queue (mensajes fallidos)
+Monitoreo:
+- Ver mensajes: 
+  docker exec -it nuam-kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic nuam.carga-masiva.events --from-beginning
+- Dashboard web: http://localhost:8000/kafka/dashboard/
 
-
-CONSUMIDORES:
-
-# Todos los consumidores
-python manage.py run_kafka_consumers
-
-# Consumidor específico
-python manage.py run_kafka_consumers --consumer carga
-python manage.py run_kafka_consumers --consumer calificacion
-python manage.py run_kafka_consumers --consumer auditoria
-
-
-MONITOREO:
-
-# Ver mensajes en tiempo real
-docker exec -it nuam-kafka kafka-console-consumer \
-  --bootstrap-server localhost:9092 \
-  --topic nuam.carga-masiva.events \
-  --from-beginning
-
-# Dashboard web
-http://localhost:8000/kafka/dashboard/
-
-================================================================================
 HTTPS/SSL - CERTIFICADOS
-================================================================================
+------------------------
+Generar certificados autofirmados:
+- python run_https.py
+- O con script bash: ./install_local_ssl.sh
 
-GENERAR CERTIFICADOS AUTOFIRMADOS:
+Gestionar certificados:
+- Ver info: python manage.py cert_info
+- Renovar: python manage.py cert_info --renew
+- Verificar expiración: python manage.py cert_info --check
 
-# Automático (recomendado)
-python run_https.py
+Iniciar servidor HTTPS:
+- python run_https.py
+- Acceder: https://localhost:8000
 
-# O con script bash
-chmod +x install_local_ssl.sh
-./install_local_ssl.sh
-
-
-GESTIONAR CERTIFICADOS:
-
-# Ver información
-python manage.py cert_info
-
-# Renovar certificado
-python manage.py cert_info --renew
-
-# Verificar expiración
-python manage.py cert_info --check
-
-
-INICIAR SERVIDOR HTTPS:
-
-python run_https.py
-# Acceder a: https://localhost:8000
-
-================================================================================
 ESTRUCTURA DEL PROYECTO
-================================================================================
-
+-----------------------
 Nuam-main/
-├── accounts/              Autenticación y usuarios
-├── api/                   API REST y lógica de negocio
-│   ├── models.py         Modelos de datos
-│   ├── views.py          ViewSets y endpoints
-│   ├── serializers.py    Serialización DRF
-│   ├── services/         Lógica de negocio
-│   └── certificates.py   Gestión SSL
-├── kafka_app/            Integración Kafka
-│   ├── producers.py      Productores de eventos
-│   ├── consumers.py      Consumidores
-│   └── monitoring.py     Métricas
-├── nuam/                 Configuración Django
-├── logs/                 Logs del sistema
-├── certs/                Certificados SSL
-└── docker-compose.yml    Servicios Docker
+├── accounts/           Autenticación y usuarios
+├── api/                API REST y lógica
+├── kafka_app/          Integración Kafka
+├── nuam/               Configuración Django
+├── logs/               Logs del sistema
+├── certs/              Certificados SSL
+└── docker-compose.yml  Servicios Docker
 
-================================================================================
 TESTING
-================================================================================
+-------
+- pytest
+- pytest --cov=api --cov=kafka_app
+- python test_kafka.py
+- python test_api.py
 
-# Todos los tests
-pytest
+📊 SISTEMA DE LOGGING AVANZADO
+------------------------------
 
-# Con coverage
-pytest --cov=api --cov=kafka_app
+ARQUITECTURA DE LOGGING IMPLEMENTADA
+El proyecto cuenta con un sistema de logging robusto y escalable que 
+registra todas las operaciones críticas del sistema.
 
-# Tests de integración
-python test_kafka.py
-python test_api.py
+📁 ARCHIVOS DE LOG
+-----------------
+logs/
+├── django.log          Logs generales de Django (10MB rotación)
+├── api.log            Logs de API y peticiones HTTP (10MB rotación)
+├── kafka.log          Logs de productores/consumidores Kafka (10MB rotación)
+├── accounts.log       Logs de autenticación y usuarios (5MB rotación)
+├── carga_excel.log    Logs de procesamiento de Excel (10MB rotación)
+├── errors.log         Logs de todos los errores (10MB rotación)
+└── security.log       Logs de seguridad y auditoría (5MB rotación)
 
-================================================================================
-LOGS Y MONITOREO
-================================================================================
+🎯 NIVELES DE LOGGING
+--------------------
+- DEBUG: Información detallada para debugging (desarrollo)
+- INFO: Eventos normales de la aplicación
+- WARNING: Eventos inusuales pero manejables
+- ERROR: Errores que requieren atención
+- CRITICAL: Errores críticos del sistema
 
-VER LOGS:
+✨ CARACTERÍSTICAS IMPLEMENTADAS
+-------------------------------
 
-tail -f logs/django.log          # Logs generales
-tail -f logs/api.log             # Logs de API
-tail -f logs/carga_excel.log     # Logs de cargas masivas
+1. MIDDLEWARE DE LOGGING
+   Registra automáticamente todas las peticiones HTTP:
+   - Método y ruta de la petición
+   - Usuario autenticado
+   - Dirección IP del cliente
+   - Tiempo de respuesta en milisegundos
+   - Status code HTTP
 
+   Ejemplo de log:
+   INFO | ⬇️ REQUEST | GET /api/v1/calificaciones/ | User: admin | IP: 127.0.0.1
+   INFO | ⬆️ RESPONSE | {"method": "GET", "status": 200, "duration_ms": 45.23}
 
-DASHBOARDS:
+2. LOGGING EN API VIEWS
+   Todos los endpoints críticos tienen logging detallado:
+   - 📝 Creación: "Creando calificación | User: admin"
+   - 📋 Listado: "Listando calificaciones | Total: 150"
+   - 🗑️ Eliminación: "Eliminando calificación | ID: 123"
+   - ❌ Errores: "Error creando calificación: [detalle]"
 
-Kafka:       http://localhost:8000/kafka/dashboard/
-Métricas:    http://localhost:8000/kafka/metrics/
-Kafka UI:    http://localhost:8080
+3. LOGGING EN KAFKA
+   Productores y consumidores con logging completo:
+   
+   Productores:
+   ✅ Mensaje enviado - Topic: nuam.carga-masiva.events
+      Partition: 0, Offset: 12345, Key: carga_123
+   
+   Consumidores:
+   📥 Mensaje recibido - Topic: nuam.calificacion.events
+   🟢 CARGA COMPLETADA - ID: 123, Exitosos: 500, Fallidos: 5
 
-================================================================================
+4. ROTACIÓN AUTOMÁTICA
+   - Rotación por tamaño (5-10MB según tipo de log)
+   - Backup de 5-10 archivos históricos
+   - Gestión automática de espacio en disco
+
+📖 COMANDOS DE MONITOREO
+------------------------
+
+Ver logs en tiempo real:
+  tail -f logs/api.log              # Logs de API
+  tail -f logs/kafka.log            # Logs de Kafka
+  tail -f logs/errors.log           # Solo errores
+  tail -f logs/*.log                # Todos los logs
+
+Buscar errores específicos:
+  grep "ERROR" logs/errors.log | grep "$(date +%Y-%m-%d)"
+  grep "User: admin" logs/api.log | grep "ERROR"
+  tail -n 50 logs/errors.log
+
+Filtrar por endpoint:
+  grep "/api/v1/calificaciones" logs/api.log
+  grep "carga" logs/api.log
+
+Análisis de performance:
+  # Requests más lentas (>1000ms)
+  grep "duration_ms" logs/api.log | awk '$NF > 1000'
+  
+  # Contar requests por endpoint
+  grep "REQUEST" logs/api.log | awk '{print $7}' | sort | uniq -c
+
+📈 ESTADÍSTICAS
+--------------
+El sistema registra:
+✅ Todas las peticiones HTTP (100%)
+✅ Todos los eventos de Kafka
+✅ Todas las operaciones CRUD
+✅ Todos los errores y excepciones
+✅ Eventos de seguridad (login, logout, accesos denegados)
+✅ Cargas masivas y procesamiento de Excel
+
+🛡️ SEGURIDAD EN LOGS
+--------------------
+- No se registran contraseñas ni tokens sensibles
+- IPs ofuscadas en producción
+- Logs con permisos restrictivos (lectura solo admin)
+- Logs de seguridad separados para auditoría
+
+📊 FORMATO DE LOGS
+-----------------
+Formato estándar compatible con:
+- ELK Stack (Elasticsearch, Logstash, Kibana)
+- Grafana Loki
+- Splunk
+- Datadog
+- CloudWatch (AWS)
+
+Ejemplo de formato:
+INFO 2025-11-19 03:31:46 api views health_check Línea:464 | 
+  🏥 API: Health check ejecutado
+
 COMANDOS ÚTILES
-================================================================================
+---------------
+- python manage.py makemigrations
+- python manage.py migrate
+- python manage.py createsuperuser
+- python manage.py shell
+- python manage.py check
+- python manage.py collectstatic
+- python manage.py flush
 
-# Crear migraciones
-python manage.py makemigrations
-
-# Aplicar migraciones
-python manage.py migrate
-
-# Crear superusuario
-python manage.py createsuperuser
-
-# Shell de Django
-python manage.py shell
-
-# Verificar configuración
-python manage.py check
-
-# Colectar estáticos
-python manage.py collectstatic
-
-# Limpiar base de datos
-python manage.py flush
-
-================================================================================
 DEPLOYMENT (PRODUCCIÓN)
-================================================================================
+-----------------------
+- Configurar .env.production
+- Ejecutar: migrate, collectstatic --noinput, check --deploy
+- Consumidores Kafka: nohup python manage.py run_kafka_consumers &
 
-CONFIGURACIÓN:
+RECURSOS
+--------
+- Django: https://docs.djangoproject.com/
+- DRF: https://www.django-rest-framework.org/
+- Kafka: https://kafka.apache.org/documentation/
+- Swagger: https://swagger.io/specification/
 
-# .env.production
-SECRET_KEY=secret-key-production
-DEBUG=False
-ALLOWED_HOSTS=tudominio.com
-DATABASE_URL=postgresql://user:pass@db:5432/nuam_prod
-KAFKA_BOOTSTRAP_SERVERS=kafka1:9092,kafka2:9092
-
-
-COMANDOS POST-DEPLOYMENT:
-
-python manage.py migrate
-python manage.py collectstatic --noinput
-python manage.py check --deploy
-nohup python manage.py run_kafka_consumers &
-
-================================================================================
-CONTRIBUCIÓN
-================================================================================
-
-1. Fork el repositorio
-2. Crea rama: git checkout -b feature/mi-mejora
-3. Commit: git commit -m 'feat: nueva funcionalidad'
-4. Push: git push origin feature/mi-mejora
-5. Abre Pull Request
-
-================================================================================
-RECURSOS Y DOCUMENTACIÓN
-================================================================================
-
-Django:              https://docs.djangoproject.com/
-Django REST:         https://www.django-rest-framework.org/
-Apache Kafka:        https://kafka.apache.org/documentation/
-Swagger/OpenAPI:     https://swagger.io/specification/
-
-================================================================================
 LICENCIA Y CONTACTO
-================================================================================
-
-Licencia: MIT License
-GitHub:   https://github.com/DykeByte
-Issues:   https://github.com/DykeByte/Nuam-main/issues
+------------------
+MIT License  
+GitHub: https://github.com/DykeByte  
+Issues: https://github.com/DykeByte/Nuam-main/issues  
 
 Made with ❤️ by DykeByte
-
-================================================================================

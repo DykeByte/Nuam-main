@@ -11,7 +11,7 @@ from django.conf import settings
 from prometheus_client import Counter, Histogram
 import time
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('kafka_app.consumers')
 
 # ============================================
 # MÉTRICAS PROMETHEUS
