@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
     'accounts',  # Nuestra app de cuentas
     'api', # app de API
     'kafka_app', # Nuestra app para kafka
@@ -416,3 +417,26 @@ KAFKA_RETRY_CONFIG = {
 KAFKA_ENABLE_METRICS = config('KAFKA_ENABLE_METRICS', default=True, cast=bool)
 
 import json
+
+# ============================================
+# KAFKA CONFIGURATION
+# ============================================
+KAFKA_BOOTSTRAP_SERVERS = config('KAFKA_BOOTSTRAP_SERVERS', default='localhost:9092').split(',')
+
+KAFKA_TOPICS = {
+    'CARGAS': 'nuam-cargas',
+    'CALIFICACIONES': 'nuam-calificaciones',
+    'LOGS': 'nuam-logs',
+}
+
+# ======================================================
+# SSL / HTTPS DEVELOPMENT SETTINGS
+# ======================================================
+from api.certificates import CertificateManager
+
+if DEBUG:
+    cert_manager = CertificateManager()
+    SSL_CERTFILE, SSL_KEYFILE = cert_manager.ensure_certificate()
+else:
+    SSL_CERTFILE = config("SSL_CERTFILE", default=None)
+    SSL_KEYFILE = config("SSL_KEYFILE", default=None)

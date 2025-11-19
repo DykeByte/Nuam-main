@@ -263,7 +263,7 @@ def lista_logs(request):
     logger.debug(f"📋 Lista de logs - Usuario: {request.user.username}")
     
     try:
-        logs = LogOperacion.objects.filter(usuario=request.user).order_by('-timestamp')[:100]
+        logs = LogOperacion.objects.filter(usuario=request.user).order_by('-fecha_hora')[:100]
         logger.debug(f"   Total de logs: {logs.count()}")
         
         return render(request, "accounts/lista_logs.html", {"logs": logs})

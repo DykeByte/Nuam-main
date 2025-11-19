@@ -4,3 +4,10 @@ __pycache__/
 *.pyc
 # Logs
 logs/*.log
+
+# Certificados locales
+cert.pem
+key.pem
+*.pem
+*.crt
+*.key

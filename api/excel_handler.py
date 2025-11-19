@@ -1,14 +1,20 @@
-# api/excel_handler.py - VERSIÓN CORREGIDA
+# api/excel_handler.py - VERSIÓN COMPLETA CON KAFKA
 import pandas as pd
 from datetime import datetime
+from django.utils import timezone
 from api.models import CalificacionTributaria, CargaMasiva, LogOperacion
+from api.kafka_producer import (
+    publicar_evento_carga_iniciada, 
+    publicar_evento_carga_completada,
+    publicar_evento_calificacion_creada
+)
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class ExcelHandler:
-    """Manejador para procesar archivos Excel"""
+    """Manejador para procesar archivos Excel con integración Kafka"""
     
     def __init__(self, archivo, tipo_carga, usuario):
         self.archivo = archivo
@@ -28,6 +34,8 @@ class ExcelHandler:
         """Procesa el archivo Excel y crea las calificaciones"""
         logger.info("🔄 Iniciando procesamiento de archivo...")
         
+        carga = None
+        
         try:
             # Leer el archivo Excel
             logger.info("📖 Leyendo archivo Excel...")
@@ -41,22 +49,35 @@ class ExcelHandler:
             # Crear el registro de carga masiva
             logger.info("💾 Creando registro de CargaMasiva...")
             carga = CargaMasiva.objects.create(
-                iniciado_por=self.usuario,  # ← CORREGIDO: era 'usuario'
+                iniciado_por=self.usuario,
                 tipo_carga=self.tipo_carga,
-                mercado=self.mercado or 'LOCAL',  # ← AGREGADO
-                archivo_nombre=self.archivo.name,  # ← CORREGIDO: era 'nombre_archivo'
-                archivo_path='',  # Por ahora vacío
+                mercado=self.mercado or 'LOCAL',
+                archivo_nombre=self.archivo.name,
+                archivo_path='',
                 registros_procesados=len(df),
-                estado='PROCESANDO'  # ← AGREGADO
+                estado='PROCESANDO'
             )
             logger.info(f"✅ CargaMasiva creada con ID: {carga.id}")
+            
+            # 🆕 PUBLICAR EVENTO KAFKA: Carga iniciada
+            logger.info("📤 Publicando evento CARGA_INICIADA en Kafka...")
+            try:
+                publicar_evento_carga_iniciada(carga)
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudo publicar evento en Kafka: {str(e)}")
             
             # Procesar cada fila
             logger.info(f"🔄 Procesando {len(df)} filas...")
             for index, row in df.iterrows():
                 try:
-                    self._procesar_fila(row, carga, index + 2)
+                    calificacion = self._procesar_fila(row, carga, index + 2)
                     self.registros_exitosos += 1
+                    
+                    # 🆕 PUBLICAR EVENTO KAFKA: Calificación creada
+                    try:
+                        publicar_evento_calificacion_creada(calificacion)
+                    except Exception as e:
+                        logger.warning(f"⚠️ No se pudo publicar evento de calificación: {str(e)}")
                     
                     if (index + 1) % 10 == 0:
                         logger.debug(f"   Procesadas {index + 1}/{len(df)} filas...")
@@ -79,6 +100,13 @@ class ExcelHandler:
             logger.info(f"   - Fallidos: {self.registros_fallidos}")
             logger.info(f"   - Estado: {carga.estado}")
             
+            # 🆕 PUBLICAR EVENTO KAFKA: Carga completada
+            logger.info("📤 Publicando evento CARGA_COMPLETADA en Kafka...")
+            try:
+                publicar_evento_carga_completada(carga)
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudo publicar evento en Kafka: {str(e)}")
+            
             # Crear log de la operación
             logger.debug("📝 Creando log de operación...")
             LogOperacion.objects.create(
@@ -99,6 +127,26 @@ class ExcelHandler:
             
         except Exception as e:
             logger.error(f"❌ Error crítico al procesar archivo: {str(e)}", exc_info=True)
+            
+            # Si se creó la carga, marcarla como error
+            if carga:
+                carga.estado = 'ERROR'
+                carga.save()
+                
+                # Publicar evento de error
+                try:
+                    evento_error = {
+                        'tipo_evento': 'CARGA_ERROR',
+                        'carga_id': carga.id,
+                        'usuario': self.usuario.username,
+                        'error': str(e),
+                        'timestamp': timezone.now().isoformat()
+                    }
+                    from api.kafka_producer import kafka_producer
+                    kafka_producer.publicar_evento('nuam-cargas', evento_error, key=f"carga-{carga.id}")
+                except:
+                    pass
+            
             raise Exception(f"Error al procesar archivo: {str(e)}")
     
     def _procesar_fila(self, row, carga, num_fila):
@@ -137,7 +185,7 @@ class ExcelHandler:
         calificacion.acopio_lsfxf = self._get_bool_value(row, 'acopio_lsfxf')
         calificacion.es_local = self._get_bool_value(row, 'es_local', default=True)
         
-        # Procesar factores (del 8 al 37)
+        # Procesar factores (del 8 al 37) solo si es tipo FACTORES
         if self.tipo_carga == 'FACTORES':
             for i in range(8, 38):
                 factor_name = f'factor_{i}'
@@ -190,7 +238,12 @@ class ExcelHandler:
                 return value.date()
             
             if isinstance(value, str):
-                return datetime.strptime(value, '%Y-%m-%d').date()
+                # Intentar varios formatos
+                for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y']:
+                    try:
+                        return datetime.strptime(value, fmt).date()
+                    except ValueError:
+                        continue
             
             return default
         except:
@@ -207,7 +260,7 @@ class ExcelHandler:
                 return value
             
             value_str = str(value).lower().strip()
-            return value_str in ['true', '1', 'sí', 'si', 'yes', 't', 'verdadero']
+            return value_str in ['true', '1', 'sí', 'si', 'yes', 't', 'verdadero', 'verdad']
         except:
             return default
 
@@ -244,3 +297,29 @@ def get_columnas_esperadas(tipo_carga):
         return columnas_basicas
     
     return columnas_basicas
+
+
+def validar_archivo_excel(archivo, tipo_carga):
+    """
+    Valida que el archivo Excel tenga las columnas correctas.
+    
+    Returns:
+        tuple: (es_valido, mensaje_error, columnas_faltantes)
+    """
+    try:
+        df = pd.read_excel(archivo)
+        df.columns = df.columns.str.strip()
+        
+        columnas_esperadas = get_columnas_esperadas(tipo_carga)
+        columnas_encontradas = set(df.columns)
+        columnas_requeridas = set(columnas_esperadas)
+        
+        columnas_faltantes = columnas_requeridas - columnas_encontradas
+        
+        if columnas_faltantes:
+            return False, f"Columnas faltantes: {', '.join(columnas_faltantes)}", list(columnas_faltantes)
+        
+        return True, "Archivo válido", []
+        
+    except Exception as e:
+        return False, f"Error leyendo archivo: {str(e)}", []
