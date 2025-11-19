@@ -8,12 +8,13 @@ from kafka_app import views
 app_name = 'kafka'
 
 urlpatterns = [
-    
     # Dashboard de monitoreo
     path('dashboard/', views.kafka_dashboard_view, name='dashboard'),
     
+    # ← AGREGAR ESTOS
+    path('metrics/', views.metrics_view, name='metrics'),
+    path('metrics/dashboard/', views.metrics_dashboard, name='metrics_dashboard'),
     
-
-    # API para obtener lag de consumidores
-     #path('consumer-lag/', views.kafka_consumer_lag_view, name='consumer_lag'),
+    # Health check
+    path('health/', views.kafka_health_check, name='health_check'),
 ]

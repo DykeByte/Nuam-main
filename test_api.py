@@ -2,25 +2,39 @@
 import requests
 import json
 from getpass import getpass
+import urllib3
+import os
 
-BASE_URL = "http://127.0.0.1:8000/api/v1"
+# Ignorar warnings de certificado autofirmado (solo desarrollo)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Detecta si estamos en DEBUG (desarrollo) para usar HTTPS
+DEBUG = os.getenv("DEBUG", "True").lower() in ["true", "1"]
+SCHEME = "https" if DEBUG else "http"
+BASE_URL = f"{SCHEME}://127.0.0.1:8000/api/v1"
 
 def obtener_token(username, password):
     """Obtiene un token JWT"""
-    response = requests.post(f"{BASE_URL}/auth/token/", json={
-        "username": username,
-        "password": password
-    })
-    
-    if response.status_code == 200:
-        data = response.json()
-        print(f"✅ Token obtenido exitosamente")
-        print(f"   Access Token: {data['access'][:50]}...")
-        print(f"   Refresh Token: {data['refresh'][:50]}...")
-        return data['access'], data['refresh']
-    else:
-        print(f"❌ Error obteniendo token: {response.status_code}")
-        print(json.dumps(response.json(), indent=2))
+    try:
+        response = requests.post(
+            f"{BASE_URL}/auth/token/",
+            json={"username": username, "password": password},
+            verify=False  # Ignora certificado autofirmado
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"✅ Token obtenido exitosamente")
+            print(f"   Access Token: {data['access'][:50]}...")
+            print(f"   Refresh Token: {data['refresh'][:50]}...")
+            return data['access'], data['refresh']
+        else:
+            print(f"❌ Error obteniendo token: {response.status_code}")
+            print(json.dumps(response.json(), indent=2))
+            return None, None
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error de conexión: {e}")
         return None, None
 
 def test_endpoint(url, headers, method='GET', data=None):
@@ -31,9 +45,9 @@ def test_endpoint(url, headers, method='GET', data=None):
     
     try:
         if method == 'GET':
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, verify=False)
         elif method == 'POST':
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=data, verify=False)
         
         print(f"Status: {response.status_code}")
         
@@ -47,8 +61,8 @@ def test_endpoint(url, headers, method='GET', data=None):
             print(json.dumps(response.json(), indent=2, ensure_ascii=False))
             return None
             
-    except Exception as e:
-        print(f"❌ Excepción: {str(e)}")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Excepción de conexión: {e}")
         return None
 
 def main():

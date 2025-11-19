@@ -8,6 +8,9 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 
+import json
+from typing import Optional, Literal
+
 logger = logging.getLogger(__name__)
 
 
@@ -132,3 +135,105 @@ class CertificateManager:
 
         # Retornar rutas correctas
         return self.cert_file, self.key_file
+
+    def export_certificate_info(self, output_format: Literal['json', 'text', 'dict'] = 'json') -> str:
+        """
+        Exporta información del certificado en diferentes formatos
+        
+        Args:
+            output_format: Formato de salida ('json', 'text', 'dict')
+        
+        Returns:
+            str: Información formateada
+        
+        Example:
+            >>> manager = CertificateManager()
+            >>> info_json = manager.export_certificate_info('json')
+            >>> print(info_json)
+        """
+        info = self.get_certificate_info()
+        
+        if not info:
+            return "No hay certificado disponible"
+        
+        if output_format == 'json':
+            return json.dumps({
+                'subject': info['subject'],
+                'issuer': info['issuer'],
+                'valid_from': info['not_valid_before'].isoformat(),
+                'valid_until': info['not_valid_after'].isoformat(),
+                'serial_number': str(info['serial_number']),
+                'is_valid': info['is_valid'],
+                'files': {
+                    'certificate': self.cert_file,
+                    'key': self.key_file
+                }
+            }, indent=2, default=str)
+        
+        elif output_format == 'text':
+            status_icon = '✅' if info['is_valid'] else '❌'
+            return f"""
+        ╔════════════════════════════════════════════════════════════╗
+        ║              CERTIFICADO SSL - NUAM                        ║
+        ╚════════════════════════════════════════════════════════════╝
+
+        📄 Archivos:
+            Certificado: {self.cert_file}
+            Clave:       {self.key_file}
+
+        👤 Subject:
+        {info['subject']}
+
+🏢 Issuer:
+   {info['issuer']}
+
+📅 Validez:
+   Desde: {info['not_valid_before']}
+   Hasta: {info['not_valid_after']}
+
+🔢 Serial:
+   {info['serial_number']}
+
+{status_icon} Estado:
+   {'VÁLIDO' if info['is_valid'] else 'VENCIDO'}
+
+{'─' * 60}
+"""
+        
+        elif output_format == 'dict':
+            return info
+        
+        else:
+            raise ValueError(f"Formato no soportado: {output_format}")
+    
+    def get_days_until_expiry(self) -> Optional[int]:
+        """
+        Calcula días hasta que expire el certificado
+        
+        Returns:
+            int: Días hasta expiración (negativo si ya expiró)
+            None: Si no hay certificado
+        """
+        info = self.get_certificate_info()
+        if not info:
+            return None
+        
+        from datetime import datetime, timezone as tz
+        now = datetime.now(tz.utc)
+        delta = info['not_valid_after'] - now
+        return delta.days
+    
+    def needs_renewal(self, days_threshold: int = 30) -> bool:
+        """
+        Verifica si el certificado necesita renovación
+        
+        Args:
+            days_threshold: Días antes de expiración para renovar (default: 30)
+        
+        Returns:
+            bool: True si necesita renovación
+        """
+        days_left = self.get_days_until_expiry()
+        if days_left is None:
+            return True
+        return days_left <= days_threshold

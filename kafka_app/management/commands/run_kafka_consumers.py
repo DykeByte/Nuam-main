@@ -16,7 +16,25 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = 'Inicia todos los consumidores Kafka en threads separados'
+    help = '''
+    Inicia todos los consumidores Kafka del sistema NUAM.
+    
+    Uso:
+        # Todos los consumidores:
+        python manage.py run_kafka_consumers
+        
+        # Consumidor específico:
+        python manage.py run_kafka_consumers --consumer carga
+        
+    Consumidores disponibles:
+        - carga: Eventos de carga masiva
+        - calificacion: Eventos de calificaciones
+        - auditoria: Logs de auditoría
+        - notificacion: Notificaciones a usuarios
+    
+    Nota: Este comando debe ejecutarse en segundo plano o en un 
+    contenedor separado en producción.
+    '''
 
     def add_arguments(self, parser):
         parser.add_argument(

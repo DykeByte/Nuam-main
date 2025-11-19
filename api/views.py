@@ -7,22 +7,19 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Q, Sum, Avg
 from django.utils import timezone
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from accounts.models import Perfil
 import pandas as pd
+from django.contrib.auth.decorators import login_required
+from api.services import registrar_log
 
-# ============================================
-# IMPORTAR PRODUCTORES KAFKA
-# ============================================
-from kafka_app.producers import (
-    carga_masiva_producer,
-    calificacion_producer,
-    auditoria_producer,
-    notificacion_producer
+
+
+from api.utils.error_recovery import (
+    auto_retry,
+    with_transaction_rollback,
+    ErrorRecoveryManager
 )
-
 
 from api.models import (
     CalificacionTributaria, 
@@ -49,12 +46,7 @@ from api.serializers import (
     UserDetailSerializer,
     EstadisticasSerializer,
 )
-from api.services import (
-    registrar_log,
-    obtener_estadisticas_dashboard,
-    calificaciones_por_agrupacion,
-    estadisticas_cargas,
-)
+
 from api.excel_handler import ExcelHandler
 
 import logging
@@ -177,6 +169,51 @@ class CalificacionTributariaViewSet(viewsets.ModelViewSet):
             valor_total=Sum('valor_historico')
         ).order_by('-total')
         return Response(data)
+    
+    @with_transaction_rollback()
+    def perform_create(self, serializer):
+        """Crear con rollback automático si falla"""
+        logger.info(f"➕ API: Creando calificación - Usuario: {self.request.user.username}")
+        
+        try:
+            # Guardar en BD
+            obj = serializer.save(usuario=self.request.user)
+            
+            # Kafka de forma segura (no crítico)
+            ErrorRecoveryManager.safe_kafka_publish(
+                calificacion_producer.publish_calificacion_creada,
+                {
+                    'id': obj.id,
+                    'instrumento': obj.instrumento,
+                    'mercado': obj.mercado,
+                    'divisa': obj.divisa,
+                    'valor_historico': str(obj.valor_historico) if obj.valor_historico else None,
+                    'usuario': self.request.user.username
+                }
+            )
+            
+            ErrorRecoveryManager.safe_kafka_publish(
+                auditoria_producer.publish_log,
+                usuario=self.request.user.username,
+                accion='CALIFICACION_CREADA',
+                recurso=f'calificacion/{obj.id}',
+                detalles={'instrumento': obj.instrumento}
+            )
+            
+            # Log tradicional
+            registrar_log(self.request.user, "CREATE", obj)
+            logger.info(f"✅ API: Calificación creada - ID: {obj.id}")
+            
+        except Exception as e:
+            import sys, traceback
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            logger.error(
+                f"❌ API: Error crítico creando calificación:\n"
+                f"Tipo: {exc_type.__name__}\n"
+                f"Mensaje: {str(e)}\n"
+                f"Traceback:\n{''.join(traceback.format_tb(exc_traceback))}"
+            )
+            raise
 
 
 class CargaMasivaViewSet(viewsets.ModelViewSet):
@@ -623,20 +660,3 @@ def actualizar_calificacion(request, calificacion_id):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
-# ============================================
-# VISTA PARA MONITOREO DE KAFKA
-# ============================================
-@login_required
-def kafka_metrics_view(request):
-    """
-    Vista para mostrar métricas de Kafka
-    Acceder a: http://localhost:8000/api/kafka/metrics
-    """
-    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-    from django.http import HttpResponse
-    
-    metrics = generate_latest()
-    return HttpResponse(
-        metrics,
-        content_type=CONTENT_TYPE_LATEST
-    )

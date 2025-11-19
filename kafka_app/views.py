@@ -5,6 +5,10 @@ from kafka import KafkaProducer
 from kafka.admin import KafkaAdminClient
 import json
 
+from django.http import HttpResponse
+from prometheus_client import generate_latest, REGISTRY
+from kafka_app.monitoring import kafka_monitor
+
 
 # -------------------------------
 # Producer: envío de mensajes
@@ -102,3 +106,58 @@ def kafka_health_check(request):
         return JsonResponse({"status": "healthy"})
     except Exception as e:
         return JsonResponse({"status": "unhealthy", "error": str(e)}, status=500)
+
+
+def metrics_view(request):
+    """
+    Endpoint para Prometheus scraping
+    
+    GET /kafka/metrics/
+    
+    Expone métricas en formato Prometheus para scraping
+    """
+    try:
+        # Actualizar métricas en tiempo real
+        kafka_monitor.get_health_status()
+        
+        # Generar output Prometheus
+        metrics_output = generate_latest(REGISTRY)
+        
+        return HttpResponse(
+            metrics_output,
+            content_type='text/plain; charset=utf-8'
+        )
+    except Exception as e:
+        logger.error(f"Error generando métricas: {e}")
+        return HttpResponse(
+            f"# Error generando métricas: {e}\n",
+            content_type='text/plain',
+            status=500
+        )
+
+
+def metrics_dashboard(request):
+    """
+    Dashboard HTML con métricas en tiempo real
+    """
+    from django.shortcuts import render
+    
+    try:
+        health_status = kafka_monitor.get_health_status()
+        
+        context = {
+            'health': health_status,
+            'cluster_status': health_status.get('status', 'unknown'),
+            'broker_count': len(health_status.get('cluster', {}).get('brokers', [])),
+            'topics_count': len(health_status.get('topics', [])),
+            'consumer_lags': health_status.get('consumer_lags', {}),
+        }
+        
+        return render(request, 'kafka/metrics_dashboard.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error en metrics dashboard: {e}")
+        return render(request, 'kafka/metrics_dashboard.html', {
+            'error': str(e),
+            'cluster_status': 'error'
+        })

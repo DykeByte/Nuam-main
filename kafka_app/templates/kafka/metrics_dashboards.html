@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-graph-up"></i> Métricas Kafka - Tiempo Real</h2>
+        <button class="btn btn-primary" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar
+        </button>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% else %}
+
+    <!-- Estado del Sistema -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body {% if cluster_status == 'healthy' %}bg-success{% else %}bg-danger{% endif %} text-white">
+                    <h5>Estado del Cluster</h5>
+                    <h3>{{ cluster_status|upper }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body bg-primary text-white">
+                    <h5>Brokers Activos</h5>
+                    <h3>{{ broker_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body bg-info text-white">
+                    <h5>Topics</h5>
+                    <h3>{{ topics_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body bg-warning text-white">
+                    <h5>Consumer Lag</h5>
+                    <h3>{{ consumer_lags|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lag por Topic -->
+    {% if consumer_lags %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-speedometer2"></i> Consumer Lag por Topic</h5>
+        </div>
+        <div class="card-body">
+            {% for topic, partitions in consumer_lags.items %}
+            <div class="mb-3">
+                <h6>{{ topic }}</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Partición</th>
+                                <th>Offset Actual</th>
+                                <th>Último Offset</th>
+                                <th>Lag</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for partition, info in partitions.items %}
+                            <tr>
+                                <td>{{ partition }}</td>
+                                <td>{{ info.current_offset }}</td>
+                                <td>{{ info.last_offset }}</td>
+                                <td>
+                                    <span class="badge {% if info.lag > 1000 %}bg-danger{% elif info.lag > 100 %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ info.lag }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Enlaces -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="bi bi-link-45deg"></i> Enlaces de Monitoreo</h5>
+        </div>
+        <div class="card-body">
+            <p>
+                <a href="{% url 'kafka:metrics' %}" target="_blank" class="btn btn-outline-primary">
+                    <i class="bi bi-bar-chart"></i> Endpoint Prometheus
+                </a>
+            </p>
+            <p>
+                <a href="http://localhost:8080" target="_blank" class="btn btn-outline-info">
+                    <i class="bi bi-ui-checks-grid"></i> Kafka UI
+                </a>
+            </p>
+            <p>
+                <a href="http://localhost:9000" target="_blank" class="btn btn-outline-success">
+                    <i class="bi bi-droplet"></i> Kafdrop
+                </a>
+            </p>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<script>
+// Auto-refresh cada 30 segundos
+setTimeout(() => location.reload(), 30000);
+</script>
+{% endblock %}

@@ -56,3 +56,4 @@ for msg in consumer:
 
 consumer.close()
 print("\n✅ Kafka funcionando perfectamente!")
+

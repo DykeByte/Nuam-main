@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-vdxx7x-a+h#*)5==$7$3o338!)zsu*+m(dqjf!gi=1i!l)-36s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 LOGIN_REDIRECT_URL = '/'
 
@@ -365,9 +365,14 @@ LOGGING = {
 }
 
 
+# ============================================
+# KAFKA CONFIGURATION
+# ============================================
+
+import json
 from decouple import config
 
-# Kafka Configuration
+# Servidores Kafka
 KAFKA_BOOTSTRAP_SERVERS = config('KAFKA_BOOTSTRAP_SERVERS', default='localhost:9092').split(',')
 
 # Topics principales
@@ -382,11 +387,11 @@ KAFKA_TOPICS = {
 # Producer Configuration
 KAFKA_PRODUCER_CONFIG = {
     'bootstrap_servers': KAFKA_BOOTSTRAP_SERVERS,
-    'acks': 'all',  # Garantiza que todos los brokers reciban el mensaje
+    'acks': 'all',
     'retries': 3,
     'max_in_flight_requests_per_connection': 1,
     'compression_type': 'gzip',
-    'linger_ms': 10,  # Espera 10ms para batchear mensajes
+    'linger_ms': 10,
     'batch_size': 16384,
     'buffer_memory': 33554432,
     'value_serializer': lambda v: json.dumps(v).encode('utf-8'),
@@ -397,7 +402,7 @@ KAFKA_PRODUCER_CONFIG = {
 KAFKA_CONSUMER_CONFIG = {
     'bootstrap_servers': KAFKA_BOOTSTRAP_SERVERS,
     'auto_offset_reset': 'earliest',
-    'enable_auto_commit': False,  # Manual commit para mayor control
+    'enable_auto_commit': False,
     'group_id': 'nuam-consumer-group',
     'max_poll_records': 100,
     'session_timeout_ms': 30000,
@@ -415,28 +420,3 @@ KAFKA_RETRY_CONFIG = {
 
 # Monitoring
 KAFKA_ENABLE_METRICS = config('KAFKA_ENABLE_METRICS', default=True, cast=bool)
-
-import json
-
-# ============================================
-# KAFKA CONFIGURATION
-# ============================================
-KAFKA_BOOTSTRAP_SERVERS = config('KAFKA_BOOTSTRAP_SERVERS', default='localhost:9092').split(',')
-
-KAFKA_TOPICS = {
-    'CARGAS': 'nuam-cargas',
-    'CALIFICACIONES': 'nuam-calificaciones',
-    'LOGS': 'nuam-logs',
-}
-
-# ======================================================
-# SSL / HTTPS DEVELOPMENT SETTINGS
-# ======================================================
-from api.certificates import CertificateManager
-
-if DEBUG:
-    cert_manager = CertificateManager()
-    SSL_CERTFILE, SSL_KEYFILE = cert_manager.ensure_certificate()
-else:
-    SSL_CERTFILE = config("SSL_CERTFILE", default=None)
-    SSL_KEYFILE = config("SSL_KEYFILE", default=None)
