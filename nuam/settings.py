@@ -109,7 +109,45 @@ DATABASES = {
     )
 }
 
+# ============================================
+# CONFIGURACIÓN DE CACHÉ
+# Implementado: 19/11/2025
+# ============================================
 
+# Cache en memoria local (no requiere Redis)
+# En producción se puede cambiar a Redis sin modificar código
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'nuam-cache',
+        'TIMEOUT': 300,  # 5 minutos por defecto
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 3,
+        }
+    }
+}
+
+# Para producción con Redis (comentado, listo para activar):
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': 'redis://127.0.0.1:6379/1',
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#             'CONNECTION_POOL_KWARGS': {'max_connections': 50},
+#             'SOCKET_CONNECT_TIMEOUT': 5,
+#             'SOCKET_TIMEOUT': 5,
+#         },
+#         'KEY_PREFIX': 'nuam',
+#         'TIMEOUT': 300,
+#     }
+# }
+
+# Configuración de cache por vista
+CACHE_MIDDLEWARE_ALIAS = 'default'
+CACHE_MIDDLEWARE_SECONDS = 300
+CACHE_MIDDLEWARE_KEY_PREFIX = 'nuam'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

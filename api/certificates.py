@@ -181,8 +181,8 @@ class CertificateManager:
             Certificado: {self.cert_file}
             Clave:       {self.key_file}
 
-        👤 Subject:
-        {info['subject']}
+            👤 Subject:
+   {info['subject']}
 
 🏢 Issuer:
    {info['issuer']}

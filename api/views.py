@@ -12,6 +12,9 @@ from accounts.models import Perfil
 import pandas as pd
 from django.contrib.auth.decorators import login_required
 from api.services import registrar_log
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 
 import logging
 
@@ -123,6 +126,76 @@ class CalificacionTributariaViewSet(viewsets.ModelViewSet):
         logger.debug(f"📋 API: Calificaciones para {user.username} - Total: {queryset.count()}")
         return queryset
     
+    def list(self, request, *args, **kwargs):
+        """
+        Listado con caché para mejorar performance en consultas frecuentes
+        """
+        # Generar cache key basada en parámetros de query
+        query_params = request.GET.urlencode()
+        cache_key = f'calificaciones_list_{request.user.id}_{query_params}'
+        
+        # Intentar obtener del cache
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.debug(f"💾 Cache HIT: {cache_key}")
+            return Response(cached_data)
+        
+        # Si no está en cache, ejecutar query normal
+        logger.debug(f"🔍 Cache MISS: {cache_key}")
+        response = super().list(request, *args, **kwargs)
+        
+        # Guardar en cache por 5 minutos
+        if response.status_code == 200:
+            cache.set(cache_key, response.data, 300)
+            logger.debug(f"💾 Guardado en cache: {cache_key}")
+        
+        return response
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Crear y limpiar cache relacionado
+        """
+        response = super().create(request, *args, **kwargs)
+        
+        # Invalidar cache después de crear
+        if response.status_code == 201:
+            cache_pattern = f'calificaciones_list_{request.user.id}_*'
+            # Limpiar todo el cache del usuario
+            cache.delete_many(cache.keys(cache_pattern))
+            logger.info(f"🧹 Cache limpiado: {cache_pattern}")
+        
+        return response
+    
+    def update(self, request, *args, **kwargs):
+        """
+        Actualizar y limpiar cache relacionado
+        """
+        response = super().update(request, *args, **kwargs)
+        
+        # Invalidar cache después de actualizar
+        if response.status_code == 200:
+            cache_pattern = f'calificaciones_list_{request.user.id}_*'
+            cache.delete_many(cache.keys(cache_pattern))
+            logger.info(f"🧹 Cache limpiado: {cache_pattern}")
+        
+        return response
+    
+    def destroy(self, request, *args, **kwargs):
+        """
+        Eliminar y limpiar cache relacionado
+        """
+        response = super().destroy(request, *args, **kwargs)
+        
+        # Invalidar cache después de eliminar
+        if response.status_code == 204:
+            cache_pattern = f'calificaciones_list_{request.user.id}_*'
+            cache.delete_many(cache.keys(cache.keys(cache_pattern)))
+            logger.info(f"🧹 Cache limpiado: {cache_pattern}")
+        
+        return response
+
+
+
     def get_serializer_class(self):
         if self.action == 'list':
             return CalificacionTributariaListSerializer

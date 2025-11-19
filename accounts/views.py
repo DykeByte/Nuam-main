@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.forms import ModelForm
 
-from api.services import procesar_carga_masiva, generar_plantilla_excel
+#from api import procesar_carga_masiva, generar_plantilla_excel
 from api.forms import CargaMasivaForm
 from api.models import CalificacionTributaria
 import logging
