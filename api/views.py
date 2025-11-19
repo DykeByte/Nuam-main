@@ -101,8 +101,25 @@ class CalificacionTributariaViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
+        """
+        Queryset optimizado con select_related y prefetch_related
+        para reducir queries a la base de datos.
+        """
         user = self.request.user
-        queryset = CalificacionTributaria.objects.filter(usuario=user)
+        
+        # Optimización con select_related para ForeignKeys
+        queryset = CalificacionTributaria.objects.filter(usuario=user).select_related(
+            'usuario',           # Traer datos del usuario en el mismo query
+            'carga_masiva',      # Traer datos de carga masiva si existe
+        ).prefetch_related(
+            'logs_operacion',    # Precarga logs de operación relacionados
+        ).only(
+            # Seleccionar solo campos necesarios para listado
+            'id', 'corredor_dueno', 'instrumento', 'mercado', 
+            'divisa', 'valor_historico', 'fecha_pago', 'created_at',
+            'usuario__username', 'carga_masiva__id', 'carga_masiva__tipo_carga'
+        )
+        
         logger.debug(f"📋 API: Calificaciones para {user.username} - Total: {queryset.count()}")
         return queryset
     
@@ -228,8 +245,21 @@ class CargaMasivaViewSet(viewsets.ModelViewSet):
     ordering = ['-fecha_inicio']
 
     def get_queryset(self):
+        """
+        Queryset optimizado con select_related y annotations
+        """
         user = self.request.user
-        queryset = CargaMasiva.objects.filter(iniciado_por=user)
+        
+        # Optimización con select_related y anotaciones
+        queryset = CargaMasiva.objects.filter(iniciado_por=user).select_related(
+            'iniciado_por'  # Traer datos del usuario en mismo query
+        ).prefetch_related(
+            'calificaciones_tributarias',  # Precarga calificaciones relacionadas
+            'logs_operacion',              # Precarga logs
+        ).annotate(
+            total_calificaciones=models.Count('calificaciones_tributarias')
+        )
+        
         logger.debug(f"📋 API: Cargas para {user.username} - Total: {queryset.count()}")
         return queryset
     

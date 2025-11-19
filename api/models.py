@@ -175,6 +175,47 @@ class CalificacionTributaria(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Calificación Tributaria'
         verbose_name_plural = 'Calificaciones Tributarias'
+        
+        # ============================================
+        # ÍNDICES OPTIMIZADOS - Mejora de Performance
+        # ============================================
+        indexes = [
+            # Índice compuesto para búsquedas por usuario y fecha
+            models.Index(fields=['usuario', '-created_at'], name='cal_trib_user_date_idx'),
+            
+            # Índice compuesto para filtros comunes (mercado + divisa)
+            models.Index(fields=['mercado', 'divisa'], name='cal_trib_merc_div_idx'),
+            
+            # Índice para búsquedas por instrumento
+            models.Index(fields=['instrumento', '-fecha_pago'], name='cal_trib_inst_pago_idx'),
+            
+            # Índice para filtros por corredor
+            models.Index(fields=['corredor_dueno', 'mercado'], name='cal_trib_corr_merc_idx'),
+            
+            # Índice para ordenamiento por fecha de pago
+            models.Index(fields=['-fecha_pago', 'divisa'], name='cal_trib_pago_div_idx'),
+            
+            # Índice para tipo de sociedad y local
+            models.Index(fields=['tipo_sociedad', 'es_local'], name='cal_trib_soc_loc_idx'),
+            
+            # Índice para carga masiva (para joins)
+            models.Index(fields=['carga_masiva', '-created_at'], name='cal_trib_carga_idx'),
+        ]
+        
+        # Constraints para integridad de datos
+        constraints = [
+            # Asegurar que el valor histórico no sea negativo
+            models.CheckConstraint(
+                check=models.Q(valor_historico__gte=0) | models.Q(valor_historico__isnull=True),
+                name='valor_historico_positivo'
+            ),
+            # Asegurar que el valor convertido no sea negativo
+            models.CheckConstraint(
+                check=models.Q(valor_convertido__gte=0) | models.Q(valor_convertido__isnull=True),
+                name='valor_convertido_positivo'
+            ),
+        ]
+
 
     def __str__(self):
         return f"{self.instrumento} - {self.corredor_dueno}"
