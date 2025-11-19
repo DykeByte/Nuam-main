@@ -325,7 +325,44 @@ class NotificacionProducer(BaseKafkaProducer):
 # ============================================
 # INSTANCIAS SINGLETON
 # ============================================
-carga_masiva_producer = CargaMasivaProducer()
-calificacion_producer = CalificacionProducer()
-auditoria_producer = AuditoriaProducer()
-notificacion_producer = NotificacionProducer()
+# Inicialización lazy de productores (no bloquea si Kafka no está disponible)
+carga_masiva_producer = None
+calificacion_producer = None
+auditoria_producer = None
+notificacion_producer = None
+
+def get_carga_masiva_producer():
+    global carga_masiva_producer
+    if carga_masiva_producer is None:
+        try:
+            carga_masiva_producer = CargaMasivaProducer()
+        except Exception as e:
+            logger.warning(f"⚠️ Kafka no disponible, usando modo degradado: {e}")
+    return carga_masiva_producer
+
+def get_calificacion_producer():
+    global calificacion_producer
+    if calificacion_producer is None:
+        try:
+            calificacion_producer = CalificacionProducer()
+        except Exception as e:
+            logger.warning(f"⚠️ Kafka no disponible, usando modo degradado: {e}")
+    return calificacion_producer
+
+def get_auditoria_producer():
+    global auditoria_producer
+    if auditoria_producer is None:
+        try:
+            auditoria_producer = AuditoriaProducer()
+        except Exception as e:
+            logger.warning(f"⚠️ Kafka no disponible, usando modo degradado: {e}")
+    return auditoria_producer
+
+def get_notificacion_producer():
+    global notificacion_producer
+    if notificacion_producer is None:
+        try:
+            notificacion_producer = NotificacionProducer()
+        except Exception as e:
+            logger.warning(f"⚠️ Kafka no disponible, usando modo degradado: {e}")
+    return notificacion_producer

@@ -203,6 +203,35 @@ GET /api/v1/calificaciones/?search=BONOS
 GET /api/v1/calificaciones/?ordering=-created_at
 GET /api/v1/calificaciones/?page=2&page_size=50
 
+
+Conversión de Divisas (API Externa):
+GET /api/v1/divisas/tasa/?from=USD&to=CLP
+Response:
+{
+  "success": true,
+  "from_currency": "USD",
+  "to_currency": "CLP",
+  "rate": "924.86",
+  "timestamp": "2025-11-19T22:31:04Z"
+}
+
+POST /api/v1/divisas/convertir/
+{
+  "amount": "100.00",
+  "from_currency": "USD",
+  "to_currency": "CLP"
+}
+Response:
+{
+  "success": true,
+  "amount": "100.00",
+  "converted_amount": "92486.00",
+  "rate": "924.86"
+}
+
+GET /api/v1/divisas/tasas/?base=USD
+Response: Todas las tasas de cambio para USD
+
 KAFKA - TOPICS Y EVENTOS
 ------------------------
 Topics configurados:
@@ -398,6 +427,47 @@ RECURSOS
 - DRF: https://www.django-rest-framework.org/
 - Kafka: https://kafka.apache.org/documentation/
 - Swagger: https://swagger.io/specification/
+
+
+API DE CONVERSIÓN DE DIVISAS
+--------------------------------
+
+Integración con ExchangeRate-API para tasas de cambio en tiempo real.
+
+CARACTERÍSTICAS
+- Tasas actualizadas en tiempo real (160+ divisas)
+- Widget interactivo en el dashboard
+- Caché de 1 hora
+- Fallback automático a tasas locales
+- Logging completo
+
+ENDPOINTS
+GET /api/v1/divisas/tasa/?from=USD&to=CLP
+  Obtiene tasa de cambio
+
+POST /api/v1/divisas/convertir/
+  Convierte un monto
+  Body: {"amount": "100", "from_currency": "USD", "to_currency": "CLP"}
+
+GET /api/v1/divisas/tasas/?base=USD
+  Todas las tasas para una divisa base
+
+GET /api/v1/divisas/tasa-ajax/?from=USD&to=CLP
+  Endpoint para AJAX (usa sesión Django)
+
+DIVISAS PRINCIPALES
+USD, EUR, CLP, COP, PEN, MXN, BRL, ARS, GBP, JPY, CNY, CAD
+
+WIDGET EN DASHBOARD
+Ubicación: /accounts/home/
+- Conversión en tiempo real mientras escribes
+- 8 divisas principales
+- Actualización automática cada cambio
+
+LOGS
+```bash
+tail -f logs/api.log | grep "💱"
+```
 
 LICENCIA Y CONTACTO
 ------------------

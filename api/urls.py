@@ -22,6 +22,10 @@ from api.views import (
     registro_api,
     mi_perfil,
     health_check,
+    obtener_tasa_cambio,
+    convertir_monto,
+    obtener_todas_tasas,
+    obtener_tasa_ajax,
 )
 
 # Router para ViewSets
@@ -64,15 +68,18 @@ schema_view = get_schema_view(
 app_name = 'api'
 
 urlpatterns = [
-    # Router URLs
-    path('', include(router.urls)),
-    
-    # Autenticación JWT
+    # Autenticación JWT (PRIMERO)
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('auth/registro/', registro_api, name='registro'),
     path('auth/me/', mi_perfil, name='mi-perfil'),
+    
+    # Conversión de Divisas (ANTES DEL ROUTER)
+    path('divisas/tasa/', obtener_tasa_cambio, name='obtener-tasa-cambio'),
+    path('divisas/convertir/', convertir_monto, name='convertir-monto'),
+    path('divisas/tasas/', obtener_todas_tasas, name='obtener-todas-tasas'),
+    path('divisas/tasa-ajax/', obtener_tasa_ajax, name='obtener-tasa-ajax'), 
     
     # Dashboard
     path('dashboard/stats/', dashboard_stats, name='dashboard-stats'),
@@ -84,4 +91,7 @@ urlpatterns = [
     path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    
+    # Router URLs (AL FINAL - captura todo lo demás)
+    path('', include(router.urls)),
 ]

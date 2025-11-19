@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from accounts.models import Perfil
 import pandas as pd
+from decimal import Decimal
 from django.contrib.auth.decorators import login_required
 from api.services import registrar_log
 from django.core.cache import cache
@@ -18,7 +19,7 @@ from django.utils.decorators import method_decorator
 from kafka_app.producers import calificacion_producer
 # from api.utils import obtener_estadisticas_dashboard
 
-
+from api.currency_converter import CurrencyConverter, convert_currency
 
 import logging
 
@@ -580,7 +581,7 @@ def health_check(request):
 def nueva_carga_masiva(request):
     """
     Vista para procesar carga masiva de datos
-    MODIFICAR TU VISTA EXISTENTE PARA AÑADIR KAFKA
+    MODIFICA VISTA EXISTENTE PARA AÑADIR KAFKA
     """
     if request.method == 'POST':
         archivo = request.FILES.get('archivo_excel')
@@ -765,3 +766,219 @@ def actualizar_calificacion(request, calificacion_id):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
+# ===============================
+# API de Conversión de Divisas
+# ===============================
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def obtener_tasa_cambio(request):
+    """
+    Obtiene la tasa de cambio entre dos divisas.
+    
+    GET /api/v1/divisas/tasa/?from=USD&to=CLP
+    
+    Response:
+    {
+        "success": true,
+        "from_currency": "USD",
+        "to_currency": "CLP",
+        "rate": "950.50",
+        "timestamp": "2025-11-19T18:30:00Z"
+    }
+    """
+    from_currency = request.GET.get('from', 'USD')
+    to_currency = request.GET.get('to', 'CLP')
+    
+    logger.info(f"📊 API: Solicitud de tasa {from_currency}/{to_currency} - Usuario: {request.user.username}")
+    
+    try:
+        rate = CurrencyConverter.get_exchange_rate(from_currency, to_currency)
+        
+        if rate is None:
+            return Response({
+                'success': False,
+                'error': f'No se pudo obtener tasa de cambio para {from_currency}/{to_currency}'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        return Response({
+            'success': True,
+            'from_currency': from_currency.upper(),
+            'to_currency': to_currency.upper(),
+            'rate': str(rate),
+            'timestamp': timezone.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo tasa: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def convertir_monto(request):
+    """
+    Convierte un monto de una divisa a otra.
+    
+    POST /api/v1/divisas/convertir/
+    Body:
+    {
+        "amount": "100.00",
+        "from_currency": "USD",
+        "to_currency": "CLP"
+    }
+    
+    Response:
+    {
+        "success": true,
+        "amount": "100.00",
+        "from_currency": "USD",
+        "to_currency": "CLP",
+        "converted_amount": "95050.00",
+        "rate": "950.50",
+        "timestamp": "2025-11-19T18:30:00Z"
+    }
+    """
+    logger.info(f"💱 API: Solicitud de conversión - Usuario: {request.user.username}")
+    
+    try:
+        amount = Decimal(request.data.get('amount', '0'))
+        from_currency = request.data.get('from_currency', 'USD')
+        to_currency = request.data.get('to_currency', 'CLP')
+        
+        if amount <= 0:
+            return Response({
+                'success': False,
+                'error': 'El monto debe ser mayor a cero'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Obtener tasa
+        rate = CurrencyConverter.get_exchange_rate(from_currency, to_currency)
+        if rate is None:
+            return Response({
+                'success': False,
+                'error': f'No se pudo obtener tasa de cambio'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        # Convertir
+        converted_amount = CurrencyConverter.convert(amount, from_currency, to_currency)
+        
+        if converted_amount is None:
+            return Response({
+                'success': False,
+                'error': 'Error en la conversión'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        logger.info(f"✅ Conversión exitosa: {amount} {from_currency} = {converted_amount} {to_currency}")
+        
+        return Response({
+            'success': True,
+            'amount': str(amount),
+            'from_currency': from_currency.upper(),
+            'to_currency': to_currency.upper(),
+            'converted_amount': str(converted_amount),
+            'rate': str(rate),
+            'timestamp': timezone.now().isoformat()
+        })
+        
+    except (ValueError, TypeError) as e:
+        logger.error(f"❌ Error en datos de conversión: {e}")
+        return Response({
+            'success': False,
+            'error': 'Datos inválidos'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(f"❌ Error convirtiendo monto: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def obtener_todas_tasas(request):
+    """
+    Obtiene todas las tasas de cambio para una divisa base.
+    
+    GET /api/v1/divisas/tasas/?base=USD
+    
+    Response:
+    {
+        "success": true,
+        "base_currency": "USD",
+        "rates": {
+            "CLP": "950.50",
+            "EUR": "0.92",
+            "COP": "4100.00",
+            ...
+        },
+        "timestamp": "2025-11-19T18:30:00Z"
+    }
+    """
+    base_currency = request.GET.get('base', 'USD')
+    
+    logger.info(f"📊 API: Solicitud de todas las tasas para {base_currency} - Usuario: {request.user.username}")
+    
+    try:
+        rates = CurrencyConverter.get_all_rates(base_currency)
+        
+        # Convertir a string para JSON
+        rates_str = {k: str(v) for k, v in rates.items()}
+        
+        return Response({
+            'success': True,
+            'base_currency': base_currency.upper(),
+            'rates': rates_str,
+            'count': len(rates_str),
+            'timestamp': timezone.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo todas las tasas: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+# AJAX widget
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def obtener_tasa_ajax(request):
+    """
+    Endpoint para AJAX sin JWT (usa sesión de Django).
+    GET /api/v1/divisas/tasa-ajax/?from=USD&to=CLP
+    """
+    from_currency = request.GET.get('from', 'USD')
+    to_currency = request.GET.get('to', 'CLP')
+    
+    try:
+        rate = CurrencyConverter.get_exchange_rate(from_currency, to_currency)
+        
+        if rate is None:
+            return Response({
+                'success': False,
+                'error': 'No se pudo obtener tasa'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        return Response({
+            'success': True,
+            'from_currency': from_currency.upper(),
+            'to_currency': to_currency.upper(),
+            'rate': str(rate),
+            'formatted_rate': f"{rate:,.2f}",
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Error en tasa AJAX: {e}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
