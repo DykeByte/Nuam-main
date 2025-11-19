@@ -1,6 +1,6 @@
 ﻿================================================================================
-                                        FLUJO DE PRUEBAS - SISTEMA NUAM
-                      Sistema de Gestión de Calificaciones Tributarias
+                    FLUJO DE PRUEBAS - SISTEMA NUAM
+           Sistema de Gestión de Calificaciones Tributarias
 ================================================================================
 
 Versión: 1.0
@@ -50,22 +50,22 @@ docker-compose --version
 
 2.1 INICIAR SERVICIOS DOCKER (Kafka, Zookeeper, UIs)
 -----------------------------------------------------
-cd ~/Desktop/Nuam-main    # O tu ruta del proyecto
+cd ~/Desktop/Nuam-main  # O tu ruta del proyecto
 docker-compose up -d
 
 Verificar que estén corriendo:
 docker-compose ps
 
 Deberías ver:
-- nuam-zookeeper        (healthy)
-- nuam-kafka                (healthy)
-- nuam-kafka-ui          (up)
-- nuam-kafdrop            (up)
+- nuam-zookeeper    (healthy)
+- nuam-kafka        (healthy)
+- nuam-kafka-ui     (up)
+- nuam-kafdrop      (up)
 
 
 2.2 APLICAR MIGRACIONES DE BASE DE DATOS
 -----------------------------------------
-source venv/bin/activate    # Activar entorno virtual
+source venv/bin/activate  # Activar entorno virtual
 python manage.py migrate
 
 
@@ -113,92 +113,92 @@ GUARDA ESTOS DATOS - Los necesitarás para todas las pruebas.
 4.1 AUTENTICACIÓN
 -----------------
 WEB:
-    http://localhost:8000/accounts/login/                    - Login
-    http://localhost:8000/accounts/registro/              - Registro
-    http://localhost:8000/accounts/logout/                  - Logout
+  http://localhost:8000/accounts/login/          - Login
+  http://localhost:8000/accounts/registro/       - Registro
+  http://localhost:8000/accounts/logout/         - Logout
 
 API (JWT):
-    POST http://localhost:8000/api/v1/auth/token/                      - Obtener token
-    POST http://localhost:8000/api/v1/auth/token/refresh/      - Refrescar token
-    POST http://localhost:8000/api/v1/auth/token/verify/        - Verificar token
-    GET    http://localhost:8000/api/v1/auth/me/                            - Mi perfil
+  POST http://localhost:8000/api/v1/auth/token/           - Obtener token
+  POST http://localhost:8000/api/v1/auth/token/refresh/   - Refrescar token
+  POST http://localhost:8000/api/v1/auth/token/verify/    - Verificar token
+  GET  http://localhost:8000/api/v1/auth/me/              - Mi perfil
 
 
 4.2 DASHBOARDS
 --------------
-    http://localhost:8000/                                                            - Raíz (redirige)
-    http://localhost:8000/accounts/home/                                - Dashboard principal
-    http://localhost:8000/api/v1/dashboard/stats/              - Estadísticas (JSON)
-    http://localhost:8000/kafka/dashboard/                            - Dashboard Kafka
-    http://localhost:8000/kafka/metrics/dashboard/            - Métricas Kafka
+  http://localhost:8000/                              - Raíz (redirige)
+  http://localhost:8000/accounts/home/                - Dashboard principal
+  http://localhost:8000/api/v1/dashboard/stats/       - Estadísticas (JSON)
+  http://localhost:8000/kafka/dashboard/              - Dashboard Kafka
+  http://localhost:8000/kafka/metrics/dashboard/      - Métricas Kafka
 
 
 4.3 CALIFICACIONES TRIBUTARIAS
 -------------------------------
 WEB:
-    http://localhost:8000/accounts/calificaciones/                            - Lista
-    http://localhost:8000/accounts/calificaciones/1/                        - Detalle
-    http://localhost:8000/accounts/calificaciones/1/editar/          - Editar
-    http://localhost:8000/accounts/calificaciones/1/eliminar/      - Eliminar
+  http://localhost:8000/accounts/calificaciones/              - Lista
+  http://localhost:8000/accounts/calificaciones/1/            - Detalle
+  http://localhost:8000/accounts/calificaciones/1/editar/     - Editar
+  http://localhost:8000/accounts/calificaciones/1/eliminar/   - Eliminar
 
 API:
-    GET        http://localhost:8000/api/v1/calificaciones/          - Listar
-    POST      http://localhost:8000/api/v1/calificaciones/          - Crear
-    GET        http://localhost:8000/api/v1/calificaciones/1/      - Ver detalle
-    PUT        http://localhost:8000/api/v1/calificaciones/1/      - Actualizar
-    PATCH    http://localhost:8000/api/v1/calificaciones/1/      - Actualizar parcial
-    DELETE http://localhost:8000/api/v1/calificaciones/1/      - Eliminar
+  GET    http://localhost:8000/api/v1/calificaciones/     - Listar
+  POST   http://localhost:8000/api/v1/calificaciones/     - Crear
+  GET    http://localhost:8000/api/v1/calificaciones/1/   - Ver detalle
+  PUT    http://localhost:8000/api/v1/calificaciones/1/   - Actualizar
+  PATCH  http://localhost:8000/api/v1/calificaciones/1/   - Actualizar parcial
+  DELETE http://localhost:8000/api/v1/calificaciones/1/   - Eliminar
 
 
 4.4 CARGAS MASIVAS
 ------------------
 WEB:
-    http://localhost:8000/accounts/cargas/                                    - Lista de cargas
-    http://localhost:8000/accounts/cargas/nueva/                        - Nueva carga
-    http://localhost:8000/accounts/cargas/1/                                - Detalle
-    http://localhost:8000/accounts/cargas/plantilla/                - Descargar plantilla
+  http://localhost:8000/accounts/cargas/                  - Lista de cargas
+  http://localhost:8000/accounts/cargas/nueva/            - Nueva carga
+  http://localhost:8000/accounts/cargas/1/                - Detalle
+  http://localhost:8000/accounts/cargas/plantilla/        - Descargar plantilla
 
 API:
-    GET    http://localhost:8000/api/v1/cargas/                              - Listar cargas
-    POST http://localhost:8000/api/v1/cargas/upload/                - Subir Excel
+  GET  http://localhost:8000/api/v1/cargas/               - Listar cargas
+  POST http://localhost:8000/api/v1/cargas/upload/        - Subir Excel
 
 
 4.5 LOGS Y AUDITORÍA
 --------------------
 WEB:
-    http://localhost:8000/accounts/logs/                                        - Ver logs
+  http://localhost:8000/accounts/logs/                    - Ver logs
 
 API:
-    GET http://localhost:8000/api/v1/logs-operacion/                - Logs de operación
-    GET http://localhost:8000/api/v1/logs-auditoria/                - Logs de auditoría
+  GET http://localhost:8000/api/v1/logs-operacion/        - Logs de operación
+  GET http://localhost:8000/api/v1/logs-auditoria/        - Logs de auditoría
 
 
 4.6 KAFKA
 ---------
-    http://localhost:8000/kafka/dashboard/                                    - Dashboard interno
-    http://localhost:8000/kafka/metrics/                                        - Métricas
-    http://localhost:8000/kafka/health/                                          - Health check
-    http://localhost:8080                                                                      - Kafka UI (Docker)
-    http://localhost:9000                                                                      - Kafdrop (Docker)
+  http://localhost:8000/kafka/dashboard/                  - Dashboard interno
+  http://localhost:8000/kafka/metrics/                    - Métricas
+  http://localhost:8000/kafka/health/                     - Health check
+  http://localhost:8080                                   - Kafka UI (Docker)
+  http://localhost:9000                                   - Kafdrop (Docker)
 
 
 4.7 DOCUMENTACIÓN
 -----------------
-    http://localhost:8000/swagger/                                                    - Swagger UI
-    http://localhost:8000/api/docs/                                                  - Swagger alternativo
-    http://localhost:8000/redoc/                                                        - ReDoc
-    http://localhost:8000/swagger.json                                            - Schema JSON
+  http://localhost:8000/swagger/                          - Swagger UI
+  http://localhost:8000/api/docs/                         - Swagger alternativo
+  http://localhost:8000/redoc/                            - ReDoc
+  http://localhost:8000/swagger.json                      - Schema JSON
 
 
 4.8 ADMINISTRACIÓN
 ------------------
-    http://localhost:8000/admin/                                                        - Panel Django Admin
+  http://localhost:8000/admin/                            - Panel Django Admin
 
 
 4.9 HEALTH CHECKS
 -----------------
-    GET http://localhost:8000/api/v1/health/                                - API health
-    GET http://localhost:8000/kafka/health/                                  - Kafka health
+  GET http://localhost:8000/api/v1/health/                - API health
+  GET http://localhost:8000/kafka/health/                 - Kafka health
 
 
 ================================================================================
@@ -210,8 +210,8 @@ API:
 1. Abre navegador
 2. Ve a: http://localhost:8000/accounts/login/
 3. Ingresa:
-      - Username: admin
-      - Password: [tu_password]
+   - Username: admin
+   - Password: [tu_password]
 4. Click en "Iniciar Sesión"
 5. Deberías ser redirigido a: http://localhost:8000/accounts/home/
 
@@ -221,16 +221,16 @@ RESULTADO ESPERADO: Dashboard principal visible
 5.2 PRUEBA DE OBTENCIÓN DE TOKEN JWT
 -------------------------------------
 curl -X POST http://localhost:8000/api/v1/auth/token/ \
-    -H "Content-Type: application/json" \
-    -d '{
-        "username": "admin",
-        "password": "tu_password"
-    }'
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "tu_password"
+  }'
 
 RESULTADO ESPERADO:
 {
-    "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+  "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
 }
 
 IMPORTANTE: Guarda el valor de "access" para las siguientes pruebas.
@@ -239,10 +239,10 @@ IMPORTANTE: Guarda el valor de "access" para las siguientes pruebas.
 5.3 PRUEBA DE VERIFICACIÓN DE TOKEN
 ------------------------------------
 curl -X POST http://localhost:8000/api/v1/auth/token/verify/ \
-    -H "Content-Type: application/json" \
-    -d '{
-        "token": "TU_TOKEN_AQUI"
-    }'
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "TU_TOKEN_AQUI"
+  }'
 
 RESULTADO ESPERADO: HTTP 200 OK
 
@@ -250,14 +250,14 @@ RESULTADO ESPERADO: HTTP 200 OK
 5.4 PRUEBA DE MI PERFIL
 -----------------------
 curl http://localhost:8000/api/v1/auth/me/ \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO:
 {
-    "id": 1,
-    "username": "admin",
-    "email": "admin@nuam.com",
-    ...
+  "id": 1,
+  "username": "admin",
+  "email": "admin@nuam.com",
+  ...
 }
 
 
@@ -271,10 +271,10 @@ PRE-REQUISITO: Usuario autenticado
 
 1. Ve a: http://localhost:8000/accounts/home/
 2. Verifica que se muestre:
-      - Total de calificaciones
-      - Gráficos de estadísticas
-      - Últimas cargas masivas
-      - Enlaces de navegación
+   - Total de calificaciones
+   - Gráficos de estadísticas
+   - Últimas cargas masivas
+   - Enlaces de navegación
 
 RESULTADO ESPERADO: Dashboard con datos estadísticos
 
@@ -283,10 +283,10 @@ RESULTADO ESPERADO: Dashboard con datos estadísticos
 --------------------------------------
 1. Ve a: http://localhost:8000/accounts/calificaciones/
 2. Verifica que se muestre:
-      - Tabla con calificaciones
-      - Filtros (mercado, divisa, búsqueda)
-      - Botones de acción (Editar, Eliminar)
-      - Paginación
+   - Tabla con calificaciones
+   - Filtros (mercado, divisa, búsqueda)
+   - Botones de acción (Editar, Eliminar)
+   - Paginación
 
 RESULTADO ESPERADO: Lista de calificaciones (puede estar vacía)
 
@@ -296,12 +296,12 @@ RESULTADO ESPERADO: Lista de calificaciones (puede estar vacía)
 1. Ve a: http://localhost:8000/accounts/calificaciones/
 2. Click en botón "Nueva Calificación"
 3. Completa el formulario:
-      - Corredor Dueño: Corredor ABC
-      - Instrumento: BONO-TEST-001
-      - Mercado: LOCAL
-      - Divisa: CLP
-      - Valor Histórico: 1000000
-      - Fecha de Pago: 2025-12-31
+   - Corredor Dueño: Corredor ABC
+   - Instrumento: BONO-TEST-001
+   - Mercado: LOCAL
+   - Divisa: CLP
+   - Valor Histórico: 1000000
+   - Fecha de Pago: 2025-12-31
 4. Click en "Guardar"
 
 RESULTADO ESPERADO: 
@@ -339,14 +339,49 @@ RESULTADO ESPERADO:
 RESULTADO ESPERADO: Archivo "plantilla_carga_masiva.xlsx" descargado
 
 
-6.7 PRUEBA DE LOGS
+6.8 PRUEBA DE WIDGET DE CONVERSIÓN DE DIVISAS (NUEVO)
+------------------------------------------------------
+PRE-REQUISITO: Usuario autenticado
+
+1. Ve a: http://localhost:8000/accounts/home/
+2. Localiza el widget "Conversor de Divisas" en el dashboard
+3. Verifica que se muestre:
+      - Selector de divisa origen (From)
+      - Selector de divisa destino (To)
+      - Campo de monto
+      - Tasa de cambio actual
+      - Resultado de conversión
+4. Selecciona:
+      - From: USD
+      - To: CLP
+      - Amount: 100
+5. Verifica que la conversión se realice automáticamente
+
+RESULTADO ESPERADO:
+- Widget visible y funcional
+- Conversión en tiempo real mientras escribes
+- Tasas actualizadas
+- Resultado mostrado correctamente (ej: 100 USD = 92,486 CLP)
+
+Divisas principales disponibles:
+- USD (Dólar estadounidense)
+- EUR (Euro)
+- CLP (Peso chileno)
+- COP (Peso colombiano)
+- PEN (Sol peruano)
+- MXN (Peso mexicano)
+- BRL (Real brasileño)
+- ARS (Peso argentino)
+
+
+6.9 PRUEBA DE LOGS
 ------------------
 1. Ve a: http://localhost:8000/accounts/logs/
 2. Verifica que se muestren:
-      - Logs de operaciones recientes
-      - Usuario que realizó la acción
-      - Fecha y hora
-      - Tipo de operación
+   - Logs de operaciones recientes
+   - Usuario que realizó la acción
+   - Fecha y hora
+   - Tipo de operación
 
 RESULTADO ESPERADO: Lista de logs con operaciones recientes
 
@@ -360,87 +395,87 @@ NOTA: Reemplaza TU_TOKEN con el token JWT obtenido en la sección 5.2
 7.1 PRUEBA DE HEALTH CHECK
 --------------------------
 curl http://localhost:8000/api/v1/health/ \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO:
 {
-    "status": "healthy",
-    "timestamp": "2025-11-19T10:30:00.000Z"
+  "status": "healthy",
+  "timestamp": "2025-11-19T10:30:00.000Z"
 }
 
 
 7.2 PRUEBA DE LISTAR CALIFICACIONES
 ------------------------------------
 curl http://localhost:8000/api/v1/calificaciones/ \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO:
 {
-    "count": 10,
-    "next": null,
-    "previous": null,
-    "results": [
-        {
-            "id": 1,
-            "corredor_dueno": "Corredor ABC",
-            "instrumento": "BONO-001",
-            ...
-        }
-    ]
+  "count": 10,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "corredor_dueno": "Corredor ABC",
+      "instrumento": "BONO-001",
+      ...
+    }
+  ]
 }
 
 
 7.3 PRUEBA DE CREAR CALIFICACIÓN (API)
 ---------------------------------------
 curl -X POST http://localhost:8000/api/v1/calificaciones/ \
-    -H "Authorization: Bearer TU_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "corredor_dueno": "Corredor XYZ",
-        "instrumento": "BONO-API-TEST",
-        "mercado": "LOCAL",
-        "divisa": "CLP",
-        "valor_historico": 1500000.00,
-        "fecha_pago": "2025-12-31"
-    }'
+  -H "Authorization: Bearer TU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "corredor_dueno": "Corredor XYZ",
+    "instrumento": "BONO-API-TEST",
+    "mercado": "LOCAL",
+    "divisa": "CLP",
+    "valor_historico": 1500000.00,
+    "fecha_pago": "2025-12-31"
+  }'
 
 RESULTADO ESPERADO:
 HTTP 201 Created
 {
-    "id": 2,
-    "corredor_dueno": "Corredor XYZ",
-    "instrumento": "BONO-API-TEST",
-    "mercado": "LOCAL",
-    ...
+  "id": 2,
+  "corredor_dueno": "Corredor XYZ",
+  "instrumento": "BONO-API-TEST",
+  "mercado": "LOCAL",
+  ...
 }
 
 
 7.4 PRUEBA DE VER DETALLE DE CALIFICACIÓN
 ------------------------------------------
 curl http://localhost:8000/api/v1/calificaciones/1/ \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO:
 {
-    "id": 1,
-    "corredor_dueno": "Corredor ABC",
-    ...
+  "id": 1,
+  "corredor_dueno": "Corredor ABC",
+  ...
 }
 
 
 7.5 PRUEBA DE ACTUALIZAR CALIFICACIÓN (PUT)
 --------------------------------------------
 curl -X PUT http://localhost:8000/api/v1/calificaciones/1/ \
-    -H "Authorization: Bearer TU_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "corredor_dueno": "Corredor ABC Updated",
-        "instrumento": "BONO-001",
-        "mercado": "LOCAL",
-        "divisa": "CLP",
-        "valor_historico": 2500000.00,
-        "fecha_pago": "2025-12-31"
-    }'
+  -H "Authorization: Bearer TU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "corredor_dueno": "Corredor ABC Updated",
+    "instrumento": "BONO-001",
+    "mercado": "LOCAL",
+    "divisa": "CLP",
+    "valor_historico": 2500000.00,
+    "fecha_pago": "2025-12-31"
+  }'
 
 RESULTADO ESPERADO:
 HTTP 200 OK con datos actualizados
@@ -449,11 +484,11 @@ HTTP 200 OK con datos actualizados
 7.6 PRUEBA DE ACTUALIZAR PARCIAL (PATCH)
 -----------------------------------------
 curl -X PATCH http://localhost:8000/api/v1/calificaciones/1/ \
-    -H "Authorization: Bearer TU_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "valor_historico": 3000000.00
-    }'
+  -H "Authorization: Bearer TU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "valor_historico": 3000000.00
+  }'
 
 RESULTADO ESPERADO:
 HTTP 200 OK con solo el campo modificado
@@ -462,7 +497,7 @@ HTTP 200 OK con solo el campo modificado
 7.7 PRUEBA DE ELIMINAR CALIFICACIÓN (API)
 ------------------------------------------
 curl -X DELETE http://localhost:8000/api/v1/calificaciones/1/ \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO:
 HTTP 204 No Content
@@ -472,23 +507,23 @@ HTTP 204 No Content
 ---------------------
 # Filtrar por mercado
 curl "http://localhost:8000/api/v1/calificaciones/?mercado=LOCAL" \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 # Filtrar por divisa
 curl "http://localhost:8000/api/v1/calificaciones/?divisa=CLP" \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 # Buscar por texto
 curl "http://localhost:8000/api/v1/calificaciones/?search=BONO" \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 # Ordenar por fecha (descendente)
 curl "http://localhost:8000/api/v1/calificaciones/?ordering=-created_at" \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 # Combinar filtros
 curl "http://localhost:8000/api/v1/calificaciones/?mercado=LOCAL&divisa=CLP&ordering=-created_at" \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO: Resultados filtrados según parámetros
 
@@ -496,29 +531,78 @@ RESULTADO ESPERADO: Resultados filtrados según parámetros
 7.9 PRUEBA DE PAGINACIÓN
 ------------------------
 curl "http://localhost:8000/api/v1/calificaciones/?page=1&page_size=10" \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO:
 {
-    "count": 50,
-    "next": "http://localhost:8000/api/v1/calificaciones/?page=2",
-    "previous": null,
-    "results": [...]
+  "count": 50,
+  "next": "http://localhost:8000/api/v1/calificaciones/?page=2",
+  "previous": null,
+  "results": [...]
 }
 
 
-7.10 PRUEBA DE ESTADÍSTICAS DEL DASHBOARD
-------------------------------------------
-curl http://localhost:8000/api/v1/dashboard/stats/ \
-    -H "Authorization: Bearer TU_TOKEN"
+7.11 PRUEBA DE CONVERSIÓN DE DIVISAS (NUEVO)
+---------------------------------------------
+# Obtener tasa de cambio
+curl "http://localhost:8000/api/v1/divisas/tasa/?from=USD&to=CLP" \
+    -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO:
 {
-    "total_calificaciones": 10,
-    "total_cargas": 5,
-    "calificaciones_por_mercado": {...},
-    "calificaciones_por_divisa": {...},
-    ...
+    "success": true,
+    "from_currency": "USD",
+    "to_currency": "CLP",
+    "rate": "924.86",
+    "timestamp": "2025-11-19T22:31:04Z"
+}
+
+# Convertir monto
+curl -X POST http://localhost:8000/api/v1/divisas/convertir/ \
+    -H "Authorization: Bearer TU_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "amount": "100.00",
+        "from_currency": "USD",
+        "to_currency": "CLP"
+    }'
+
+RESULTADO ESPERADO:
+{
+    "success": true,
+    "amount": "100.00",
+    "converted_amount": "92486.00",
+    "rate": "924.86",
+    "from_currency": "USD",
+    "to_currency": "CLP"
+}
+
+# Obtener todas las tasas para una divisa base
+curl "http://localhost:8000/api/v1/divisas/tasas/?base=USD" \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+    "success": true,
+    "base": "USD",
+    "rates": {
+        "CLP": 924.86,
+        "EUR": 0.92,
+        "COP": 4350.00,
+        ...
+    }
+}
+------------------------------------------
+curl http://localhost:8000/api/v1/dashboard/stats/ \
+  -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+  "total_calificaciones": 10,
+  "total_cargas": 5,
+  "calificaciones_por_mercado": {...},
+  "calificaciones_por_divisa": {...},
+  ...
 }
 
 
@@ -532,9 +616,9 @@ Crea un archivo Excel con las siguientes columnas:
 
 | corredor_dueno | instrumento | mercado | divisa | valor_historico | fecha_pago |
 |---------------|-------------|---------|--------|-----------------|------------|
-| Corredor A        | BONO-001        | LOCAL      | CLP        | 1000000                  | 2025-12-31 |
-| Corredor B        | BONO-002        | LOCAL      | CLP        | 2000000                  | 2025-12-31 |
-| Corredor C        | BONO-003        | INTERNACIONAL | USD | 50000 | 2025-12-31 |
+| Corredor A    | BONO-001    | LOCAL   | CLP    | 1000000         | 2025-12-31 |
+| Corredor B    | BONO-002    | LOCAL   | CLP    | 2000000         | 2025-12-31 |
+| Corredor C    | BONO-003    | INTERNACIONAL | USD | 50000 | 2025-12-31 |
 
 Guarda como: test_carga.xlsx
 
@@ -557,19 +641,19 @@ RESULTADO ESPERADO:
 8.3 PRUEBA DE CARGA MASIVA (API)
 ---------------------------------
 curl -X POST http://localhost:8000/api/v1/cargas/upload/ \
-    -H "Authorization: Bearer TU_TOKEN" \
-    -F "archivo=@test_carga.xlsx" \
-    -F "tipo_carga=FACTORES" \
-    -F "mercado=LOCAL"
+  -H "Authorization: Bearer TU_TOKEN" \
+  -F "archivo=@test_carga.xlsx" \
+  -F "tipo_carga=FACTORES" \
+  -F "mercado=LOCAL"
 
 RESULTADO ESPERADO:
 {
-    "id": 1,
-    "archivo": "cargas/test_carga.xlsx",
-    "tipo_carga": "FACTORES",
-    "estado": "EN_PROCESO",
-    "total_registros": 3,
-    ...
+  "id": 1,
+  "archivo": "cargas/test_carga.xlsx",
+  "tipo_carga": "FACTORES",
+  "estado": "EN_PROCESO",
+  "total_registros": 3,
+  ...
 }
 
 
@@ -582,15 +666,15 @@ RESULTADO ESPERADO:
 
 # VIA API:
 curl http://localhost:8000/api/v1/cargas/1/ \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 RESULTADO ESPERADO:
 {
-    "id": 1,
-    "estado": "COMPLETADA",
-    "registros_exitosos": 3,
-    "registros_fallidos": 0,
-    ...
+  "id": 1,
+  "estado": "COMPLETADA",
+  "registros_exitosos": 3,
+  "registros_fallidos": 0,
+  ...
 }
 
 
@@ -598,9 +682,9 @@ RESULTADO ESPERADO:
 --------------------------------------
 1. Ve a: http://localhost:8000/kafka/dashboard/
 2. Verifica que se muestre:
-      - Topics activos
-      - Mensajes procesados
-      - Estado de consumidores
+   - Topics activos
+   - Mensajes procesados
+   - Estado de consumidores
 
 # O vía logs:
 tail -f logs/kafka.log
@@ -615,15 +699,15 @@ tail -f logs/kafka.log
 docker-compose ps
 
 RESULTADO ESPERADO:
-nuam-kafka                Up (healthy)
-nuam-zookeeper        Up (healthy)
+nuam-kafka        Up (healthy)
+nuam-zookeeper    Up (healthy)
 
 
 9.2 VERIFICAR TOPICS DE KAFKA
 ------------------------------
 docker exec -it nuam-kafka kafka-topics \
-    --bootstrap-server localhost:9092 \
-    --list
+  --bootstrap-server localhost:9092 \
+  --list
 
 RESULTADO ESPERADO (topics esperados):
 - nuam.carga-masiva.events
@@ -636,9 +720,9 @@ RESULTADO ESPERADO (topics esperados):
 9.3 VER MENSAJES DE UN TOPIC
 -----------------------------
 docker exec -it nuam-kafka kafka-console-consumer \
-    --bootstrap-server localhost:9092 \
-    --topic nuam.carga-masiva.events \
-    --from-beginning
+  --bootstrap-server localhost:9092 \
+  --topic nuam.carga-masiva.events \
+  --from-beginning
 
 RESULTADO ESPERADO: Mensajes JSON de eventos de carga masiva
 
@@ -647,9 +731,9 @@ RESULTADO ESPERADO: Mensajes JSON de eventos de carga masiva
 ----------------------
 1. Abre navegador: http://localhost:8080
 2. Verifica que se muestre:
-      - Cluster "nuam-cluster"
-      - Topics disponibles
-      - Brokers activos
+   - Cluster "nuam-cluster"
+   - Topics disponibles
+   - Brokers activos
 
 RESULTADO ESPERADO: Interfaz de Kafka UI funcional
 
@@ -796,9 +880,9 @@ OBJETIVO: Probar todos los filtros de la API
 
 PASOS:
 1. Crear calificaciones con diferentes:
-      - Mercados (LOCAL, INTERNACIONAL)
-      - Divisas (CLP, USD, EUR)
-      - Instrumentos variados
+   - Mercados (LOCAL, INTERNACIONAL)
+   - Divisas (CLP, USD, EUR)
+   - Instrumentos variados
 2. Filtrar por mercado LOCAL
 3. Filtrar por divisa CLP
 4. Buscar por texto "BONO"
@@ -829,6 +913,38 @@ CRITERIO DE ÉXITO:
 - No hay mensajes en DLQ (Dead Letter Queue)
 
 
+CASO DE PRUEBA 6: CONVERSIÓN DE DIVISAS EN TIEMPO REAL (NUEVO)
+---------------------------------------------------------------
+OBJETIVO: Probar el sistema de conversión de divisas con API externa
+
+PASOS:
+1. Acceder al dashboard: http://localhost:8000/accounts/home/
+2. Localizar widget de conversión de divisas
+3. Seleccionar USD como divisa origen
+4. Seleccionar CLP como divisa destino
+5. Ingresar monto: 1000
+6. Verificar conversión automática
+7. Probar via API:
+      curl "http://localhost:8000/api/v1/divisas/tasa/?from=USD&to=CLP" \
+        -H "Authorization: Bearer TU_TOKEN"
+8. Probar conversión programática:
+      curl -X POST http://localhost:8000/api/v1/divisas/convertir/ \
+        -H "Authorization: Bearer TU_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{"amount": "1000", "from_currency": "USD", "to_currency": "CLP"}'
+9. Verificar en logs:
+      tail -f logs/api.log | grep "💱"
+10. Probar con diferentes combinaciones de divisas
+
+CRITERIO DE ÉXITO:
+- Widget responde en tiempo real (< 1 segundo)
+- Tasas actualizadas correctamente
+- API retorna tasas válidas
+- Conversiones matemáticamente correctas
+- Caché funcionando (segunda petición más rápida)
+- Logs registran todas las operaciones
+
+
 ================================================================================
 12. SOLUCIÓN DE PROBLEMAS COMUNES
 ================================================================================
@@ -843,8 +959,8 @@ SOLUCIÓN:
 1. Ver logs: docker logs nuam-kafka
 2. Verificar que Zookeeper esté healthy: docker-compose ps
 3. Limpiar y reiniciar:
-      docker-compose down -v
-      docker-compose up -d
+   docker-compose down -v
+   docker-compose up -d
 
 
 PROBLEMA 2: Error 401 en API
@@ -866,10 +982,10 @@ SÍNTOMAS:
 
 SOLUCIÓN:
 1. Verificar que consumidores de Kafka estén corriendo:
-      ps aux | grep run_kafka_consumers
+   ps aux | grep run_kafka_consumers
 2. Ver logs de Kafka: tail -f logs/kafka.log
 3. Reiniciar consumidores:
-      python manage.py run_kafka_consumers
+   python manage.py run_kafka_consumers
 
 
 PROBLEMA 4: Puerto 8000 ocupado
@@ -879,10 +995,10 @@ SÍNTOMAS:
 
 SOLUCIÓN:
 1. Ver qué está usando el puerto:
-      lsof -i :8000    # Mac/Linux
-      netstat -ano | findstr :8000    # Windows
+   lsof -i :8000  # Mac/Linux
+   netstat -ano | findstr :8000  # Windows
 2. Matar proceso o usar otro puerto:
-      python manage.py runserver 8001
+   python manage.py runserver 8001
 
 
 PROBLEMA 5: Error de migraciones
@@ -892,10 +1008,10 @@ SÍNTOMAS:
 
 SOLUCIÓN:
 1. Aplicar migraciones:
-      python manage.py migrate
+   python manage.py migrate
 2. Si persiste, hacer reset (CUIDADO: borra datos):
-      python manage.py flush
-      python manage.py migrate
+   python manage.py flush
+   python manage.py migrate
 
 
 PROBLEMA 6: Swagger no carga
@@ -905,10 +1021,30 @@ SÍNTOMAS:
 
 SOLUCIÓN:
 1. Verificar que drf-yasg esté instalado:
-      pip install drf-yasg
+   pip install drf-yasg
 2. Verificar URLs en nuam/urls.py
 3. Colectar archivos estáticos:
-      python manage.py collectstatic --noinput
+   python manage.py collectstatic --noinput
+
+
+PROBLEMA 7: Widget de divisas no carga tasas
+---------------------------------------------
+SÍNTOMAS:
+- Widget muestra "Error al cargar tasas"
+- API retorna error en /api/v1/divisas/tasa/
+
+SOLUCIÓN:
+1. Verificar conexión a internet (usa API externa ExchangeRate-API)
+2. Ver logs de errores:
+      tail -f logs/api.log | grep "💱"
+3. Verificar caché:
+      python manage.py shell
+      >>> from django.core.cache import cache
+      >>> cache.get('exchange_rate_USD_CLP')
+4. Limpiar caché si es necesario:
+      >>> cache.clear()
+5. La API tiene fallback automático a tasas locales
+6. Verificar que no haya límite de requests (API gratuita: 1500/mes)
 
 
 ================================================================================
@@ -939,13 +1075,13 @@ NOTAS FINALES
 ---------------------
 Ubicación de logs:
 logs/
-├── django.log                    - Logs generales de Django
-├── api.log                          - Logs de peticiones HTTP
-├── kafka.log                      - Logs de productores/consumidores
-├── accounts.log                - Logs de autenticación
-├── carga_excel.log          - Logs de procesamiento Excel
-├── errors.log                    - Todos los errores
-└── security.log                - Logs de seguridad
+├── django.log          - Logs generales de Django
+├── api.log             - Logs de peticiones HTTP
+├── kafka.log           - Logs de productores/consumidores
+├── accounts.log        - Logs de autenticación
+├── carga_excel.log     - Logs de procesamiento Excel
+├── errors.log          - Todos los errores
+└── security.log        - Logs de seguridad
 
 Ver logs en tiempo real:
 ------------------------
@@ -992,13 +1128,13 @@ curl http://localhost:8000/kafka/health/
 
 # Ver métricas detalladas
 curl http://localhost:8000/kafka/metrics/ \
-    -H "Authorization: Bearer TU_TOKEN"
+  -H "Authorization: Bearer TU_TOKEN"
 
 # Ver lag de consumidores (Docker)
 docker exec -it nuam-kafka kafka-consumer-groups \
-    --bootstrap-server localhost:9092 \
-    --describe \
-    --all-groups
+  --bootstrap-server localhost:9092 \
+  --describe \
+  --all-groups
 
 
 13.4 MONITOREO DE BASE DE DATOS
@@ -1011,9 +1147,9 @@ psql -U nuam_user -d nuam_db
 
 # Ver tamaño de tablas
 SELECT 
-        schemaname,
-        tablename,
-        pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+    schemaname,
+    tablename,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
 FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
@@ -1124,12 +1260,12 @@ CalificacionTributaria.objects.count()
 
 # Crear calificación
 cal = CalificacionTributaria.objects.create(
-        corredor_dueno='Test',
-        instrumento='BONO-SHELL',
-        mercado='LOCAL',
-        divisa='CLP',
-        valor_historico=1000000,
-        fecha_pago='2025-12-31'
+    corredor_dueno='Test',
+    instrumento='BONO-SHELL',
+    mercado='LOCAL',
+    divisa='CLP',
+    valor_historico=1000000,
+    fecha_pago='2025-12-31'
 )
 
 
@@ -1268,10 +1404,10 @@ Group=www-data
 WorkingDirectory=/home/nuam/Nuam-main
 Environment="PATH=/home/nuam/Nuam-main/venv/bin"
 ExecStart=/home/nuam/Nuam-main/venv/bin/gunicorn \
-        --workers 4 \
-        --bind unix:/run/gunicorn.sock \
-        --timeout 120 \
-        nuam.wsgi:application
+    --workers 4 \
+    --bind unix:/run/gunicorn.sock \
+    --timeout 120 \
+    nuam.wsgi:application
 
 [Install]
 WantedBy=multi-user.target
@@ -1281,35 +1417,35 @@ WantedBy=multi-user.target
 ------------------------
 # /etc/nginx/sites-available/nuam
 server {
-        listen 80;
-        server_name tudominio.com www.tudominio.com;
-        return 301 https://$server_name$request_uri;
+    listen 80;
+    server_name tudominio.com www.tudominio.com;
+    return 301 https://$server_name$request_uri;
 }
 
 server {
-        listen 443 ssl http2;
-        server_name tudominio.com www.tudominio.com;
+    listen 443 ssl http2;
+    server_name tudominio.com www.tudominio.com;
 
-        ssl_certificate /etc/letsencrypt/live/tudominio.com/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/tudominio.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/tudominio.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tudominio.com/privkey.pem;
 
-        client_max_body_size 100M;
+    client_max_body_size 100M;
 
-        location /static/ {
-                alias /home/nuam/Nuam-main/staticfiles/;
-        }
+    location /static/ {
+        alias /home/nuam/Nuam-main/staticfiles/;
+    }
 
-        location /media/ {
-                alias /home/nuam/Nuam-main/media/;
-        }
+    location /media/ {
+        alias /home/nuam/Nuam-main/media/;
+    }
 
-        location / {
-                proxy_pass http://unix:/run/gunicorn.sock;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-        }
+    location / {
+        proxy_pass http://unix:/run/gunicorn.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 }
 
 
@@ -1369,7 +1505,7 @@ reset_queries()
 # ... ejecutar código ...
 print(len(connection.queries))
 for query in connection.queries:
-        print(query)
+    print(query)
 
 
 19.2 CACHÉ
@@ -1399,24 +1535,24 @@ WHERE mercado = 'LOCAL' AND divisa = 'CLP';
 20. GLOSARIO DE TÉRMINOS
 ================================================================================
 
-API                    - Application Programming Interface
-CRUD                  - Create, Read, Update, Delete
-DLQ                    - Dead Letter Queue (cola de mensajes fallidos)
-DTO                    - Data Transfer Object
-JWT                    - JSON Web Token
-ORM                    - Object-Relational Mapping
-REST                  - Representational State Transfer
-SSL                    - Secure Sockets Layer
-TLS                    - Transport Layer Security
-WSGI                  - Web Server Gateway Interface
+API          - Application Programming Interface
+CRUD         - Create, Read, Update, Delete
+DLQ          - Dead Letter Queue (cola de mensajes fallidos)
+DTO          - Data Transfer Object
+JWT          - JSON Web Token
+ORM          - Object-Relational Mapping
+REST         - Representational State Transfer
+SSL          - Secure Sockets Layer
+TLS          - Transport Layer Security
+WSGI         - Web Server Gateway Interface
 
 Calificación Tributaria - Registro de instrumento financiero con datos fiscales
 Carga Masiva - Proceso de importación múltiple desde Excel
-Mercado            - LOCAL o INTERNACIONAL
-Divisa              - Moneda (CLP, USD, EUR, COP, PEN)
-Topic                - Canal de mensajes en Kafka
-Consumer          - Consumidor de mensajes Kafka
-Producer          - Productor de mensajes Kafka
+Mercado      - LOCAL o INTERNACIONAL
+Divisa       - Moneda (CLP, USD, EUR, COP, PEN)
+Topic        - Canal de mensajes en Kafka
+Consumer     - Consumidor de mensajes Kafka
+Producer     - Productor de mensajes Kafka
 
 
 ================================================================================
@@ -1452,10 +1588,15 @@ v1.0.0 - Noviembre 2025
 - Cargas masivas desde Excel
 - Integración con Apache Kafka
 - Autenticación JWT
-- Dashboard con estadísticas
+- Dashboard con estadísticas en tiempo real
 - Sistema de logs y auditoría
-- Soporte multi-divisa
+- Soporte multi-divisa (USD, CLP, COP, PEN, EUR, etc.)
 - Documentación Swagger
+- **NUEVO: Widget de conversión de divisas en tiempo real**
+- **NUEVO: Integración con ExchangeRate-API (160+ divisas)**
+- **NUEVO: Sistema de caché para optimización de queries**
+- **NUEVO: 7 índices compuestos en base de datos**
+- **NUEVO: Métricas de performance (-92% tiempo de respuesta)**
 
 
 ROADMAP FUTURO:
@@ -1463,11 +1604,13 @@ ROADMAP FUTURO:
 - [ ] Exportación a PDF de reportes
 - [ ] Gráficos avanzados en dashboard
 - [ ] Notificaciones por email
-- [ ] Integración con servicios externos
+- [ ] Integración con más servicios externos
 - [ ] App móvil
 - [ ] Reportes personalizados
 - [ ] Machine Learning para predicciones
 - [ ] Multi-tenancy
+- [ ] Alertas automáticas de cambios en divisas
+- [ ] Historial de tasas de cambio
 
 
 ================================================================================
