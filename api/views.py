@@ -15,6 +15,10 @@ from api.services import registrar_log
 from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
+from kafka_app.producers import calificacion_producer
+# from api.utils import obtener_estadisticas_dashboard
+
+
 
 import logging
 

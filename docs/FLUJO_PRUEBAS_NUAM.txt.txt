@@ -1,0 +1,1484 @@
+﻿================================================================================
+                                        FLUJO DE PRUEBAS - SISTEMA NUAM
+                      Sistema de Gestión de Calificaciones Tributarias
+================================================================================
+
+Versión: 1.0
+Fecha: Noviembre 2025
+Autor: DykeByte
+
+================================================================================
+TABLA DE CONTENIDOS
+================================================================================
+
+1. REQUISITOS PREVIOS
+2. INICIO DEL SISTEMA
+3. CREACIÓN DE USUARIO ADMINISTRADOR
+4. MAPA COMPLETO DE RUTAS
+5. PRUEBAS DE AUTENTICACIÓN
+6. PRUEBAS DE INTERFAZ WEB
+7. PRUEBAS DE API REST
+8. PRUEBAS DE CARGAS MASIVAS
+9. PRUEBAS DE KAFKA
+10. VERIFICACIÓN DE SALUD DEL SISTEMA
+11. CASOS DE PRUEBA COMPLETOS
+12. SOLUCIÓN DE PROBLEMAS COMUNES
+
+================================================================================
+1. REQUISITOS PREVIOS
+================================================================================
+
+Antes de iniciar las pruebas, verifica que tienes:
+
+✓ Python 3.10+ instalado
+✓ PostgreSQL corriendo con base de datos 'nuam_db' creada
+✓ Docker Desktop ejecutándose
+✓ Entorno virtual activado (venv)
+✓ Dependencias instaladas (pip install -r requirements.txt)
+✓ Variables de entorno configuradas (archivo .env)
+
+Verificar instalaciones:
+-------------------------
+python --version
+psql --version
+docker --version
+docker-compose --version
+
+================================================================================
+2. INICIO DEL SISTEMA
+================================================================================
+
+2.1 INICIAR SERVICIOS DOCKER (Kafka, Zookeeper, UIs)
+-----------------------------------------------------
+cd ~/Desktop/Nuam-main    # O tu ruta del proyecto
+docker-compose up -d
+
+Verificar que estén corriendo:
+docker-compose ps
+
+Deberías ver:
+- nuam-zookeeper        (healthy)
+- nuam-kafka                (healthy)
+- nuam-kafka-ui          (up)
+- nuam-kafdrop            (up)
+
+
+2.2 APLICAR MIGRACIONES DE BASE DE DATOS
+-----------------------------------------
+source venv/bin/activate    # Activar entorno virtual
+python manage.py migrate
+
+
+2.3 INICIAR SERVIDOR DJANGO
+----------------------------
+Terminal 1:
+source venv/bin/activate
+python manage.py runserver
+
+El servidor iniciará en: http://localhost:8000
+
+
+2.4 INICIAR CONSUMIDORES DE KAFKA (Opcional pero recomendado)
+--------------------------------------------------------------
+Terminal 2 (nueva terminal):
+cd ~/Desktop/Nuam-main
+source venv/bin/activate
+python manage.py run_kafka_consumers
+
+
+================================================================================
+3. CREACIÓN DE USUARIO ADMINISTRADOR
+================================================================================
+
+Si es la primera vez que inicias el sistema:
+
+python manage.py createsuperuser
+
+Ingresa los siguientes datos cuando se te solicite:
+- Username: admin
+- Email: admin@nuam.com
+- Password: [tu_password_seguro]
+- Password (again): [tu_password_seguro]
+
+Ejemplo de salida exitosa:
+---------------------------
+Superuser created successfully.
+
+GUARDA ESTOS DATOS - Los necesitarás para todas las pruebas.
+
+================================================================================
+4. MAPA COMPLETO DE RUTAS
+================================================================================
+
+4.1 AUTENTICACIÓN
+-----------------
+WEB:
+    http://localhost:8000/accounts/login/                    - Login
+    http://localhost:8000/accounts/registro/              - Registro
+    http://localhost:8000/accounts/logout/                  - Logout
+
+API (JWT):
+    POST http://localhost:8000/api/v1/auth/token/                      - Obtener token
+    POST http://localhost:8000/api/v1/auth/token/refresh/      - Refrescar token
+    POST http://localhost:8000/api/v1/auth/token/verify/        - Verificar token
+    GET    http://localhost:8000/api/v1/auth/me/                            - Mi perfil
+
+
+4.2 DASHBOARDS
+--------------
+    http://localhost:8000/                                                            - Raíz (redirige)
+    http://localhost:8000/accounts/home/                                - Dashboard principal
+    http://localhost:8000/api/v1/dashboard/stats/              - Estadísticas (JSON)
+    http://localhost:8000/kafka/dashboard/                            - Dashboard Kafka
+    http://localhost:8000/kafka/metrics/dashboard/            - Métricas Kafka
+
+
+4.3 CALIFICACIONES TRIBUTARIAS
+-------------------------------
+WEB:
+    http://localhost:8000/accounts/calificaciones/                            - Lista
+    http://localhost:8000/accounts/calificaciones/1/                        - Detalle
+    http://localhost:8000/accounts/calificaciones/1/editar/          - Editar
+    http://localhost:8000/accounts/calificaciones/1/eliminar/      - Eliminar
+
+API:
+    GET        http://localhost:8000/api/v1/calificaciones/          - Listar
+    POST      http://localhost:8000/api/v1/calificaciones/          - Crear
+    GET        http://localhost:8000/api/v1/calificaciones/1/      - Ver detalle
+    PUT        http://localhost:8000/api/v1/calificaciones/1/      - Actualizar
+    PATCH    http://localhost:8000/api/v1/calificaciones/1/      - Actualizar parcial
+    DELETE http://localhost:8000/api/v1/calificaciones/1/      - Eliminar
+
+
+4.4 CARGAS MASIVAS
+------------------
+WEB:
+    http://localhost:8000/accounts/cargas/                                    - Lista de cargas
+    http://localhost:8000/accounts/cargas/nueva/                        - Nueva carga
+    http://localhost:8000/accounts/cargas/1/                                - Detalle
+    http://localhost:8000/accounts/cargas/plantilla/                - Descargar plantilla
+
+API:
+    GET    http://localhost:8000/api/v1/cargas/                              - Listar cargas
+    POST http://localhost:8000/api/v1/cargas/upload/                - Subir Excel
+
+
+4.5 LOGS Y AUDITORÍA
+--------------------
+WEB:
+    http://localhost:8000/accounts/logs/                                        - Ver logs
+
+API:
+    GET http://localhost:8000/api/v1/logs-operacion/                - Logs de operación
+    GET http://localhost:8000/api/v1/logs-auditoria/                - Logs de auditoría
+
+
+4.6 KAFKA
+---------
+    http://localhost:8000/kafka/dashboard/                                    - Dashboard interno
+    http://localhost:8000/kafka/metrics/                                        - Métricas
+    http://localhost:8000/kafka/health/                                          - Health check
+    http://localhost:8080                                                                      - Kafka UI (Docker)
+    http://localhost:9000                                                                      - Kafdrop (Docker)
+
+
+4.7 DOCUMENTACIÓN
+-----------------
+    http://localhost:8000/swagger/                                                    - Swagger UI
+    http://localhost:8000/api/docs/                                                  - Swagger alternativo
+    http://localhost:8000/redoc/                                                        - ReDoc
+    http://localhost:8000/swagger.json                                            - Schema JSON
+
+
+4.8 ADMINISTRACIÓN
+------------------
+    http://localhost:8000/admin/                                                        - Panel Django Admin
+
+
+4.9 HEALTH CHECKS
+-----------------
+    GET http://localhost:8000/api/v1/health/                                - API health
+    GET http://localhost:8000/kafka/health/                                  - Kafka health
+
+
+================================================================================
+5. PRUEBAS DE AUTENTICACIÓN
+================================================================================
+
+5.1 PRUEBA DE LOGIN WEB
+-----------------------
+1. Abre navegador
+2. Ve a: http://localhost:8000/accounts/login/
+3. Ingresa:
+      - Username: admin
+      - Password: [tu_password]
+4. Click en "Iniciar Sesión"
+5. Deberías ser redirigido a: http://localhost:8000/accounts/home/
+
+RESULTADO ESPERADO: Dashboard principal visible
+
+
+5.2 PRUEBA DE OBTENCIÓN DE TOKEN JWT
+-------------------------------------
+curl -X POST http://localhost:8000/api/v1/auth/token/ \
+    -H "Content-Type: application/json" \
+    -d '{
+        "username": "admin",
+        "password": "tu_password"
+    }'
+
+RESULTADO ESPERADO:
+{
+    "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+    "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+}
+
+IMPORTANTE: Guarda el valor de "access" para las siguientes pruebas.
+
+
+5.3 PRUEBA DE VERIFICACIÓN DE TOKEN
+------------------------------------
+curl -X POST http://localhost:8000/api/v1/auth/token/verify/ \
+    -H "Content-Type: application/json" \
+    -d '{
+        "token": "TU_TOKEN_AQUI"
+    }'
+
+RESULTADO ESPERADO: HTTP 200 OK
+
+
+5.4 PRUEBA DE MI PERFIL
+-----------------------
+curl http://localhost:8000/api/v1/auth/me/ \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+    "id": 1,
+    "username": "admin",
+    "email": "admin@nuam.com",
+    ...
+}
+
+
+================================================================================
+6. PRUEBAS DE INTERFAZ WEB
+================================================================================
+
+6.1 PRUEBA DE DASHBOARD PRINCIPAL
+----------------------------------
+PRE-REQUISITO: Usuario autenticado
+
+1. Ve a: http://localhost:8000/accounts/home/
+2. Verifica que se muestre:
+      - Total de calificaciones
+      - Gráficos de estadísticas
+      - Últimas cargas masivas
+      - Enlaces de navegación
+
+RESULTADO ESPERADO: Dashboard con datos estadísticos
+
+
+6.2 PRUEBA DE LISTA DE CALIFICACIONES
+--------------------------------------
+1. Ve a: http://localhost:8000/accounts/calificaciones/
+2. Verifica que se muestre:
+      - Tabla con calificaciones
+      - Filtros (mercado, divisa, búsqueda)
+      - Botones de acción (Editar, Eliminar)
+      - Paginación
+
+RESULTADO ESPERADO: Lista de calificaciones (puede estar vacía)
+
+
+6.3 PRUEBA DE CREAR CALIFICACIÓN (WEB)
+---------------------------------------
+1. Ve a: http://localhost:8000/accounts/calificaciones/
+2. Click en botón "Nueva Calificación"
+3. Completa el formulario:
+      - Corredor Dueño: Corredor ABC
+      - Instrumento: BONO-TEST-001
+      - Mercado: LOCAL
+      - Divisa: CLP
+      - Valor Histórico: 1000000
+      - Fecha de Pago: 2025-12-31
+4. Click en "Guardar"
+
+RESULTADO ESPERADO: 
+- Mensaje de éxito
+- Redirigido a lista de calificaciones
+- Nueva calificación visible en la tabla
+
+
+6.4 PRUEBA DE EDITAR CALIFICACIÓN
+----------------------------------
+1. En lista de calificaciones, click en "Editar" de una calificación
+2. Modifica el campo "Valor Histórico" a: 2000000
+3. Click en "Actualizar"
+
+RESULTADO ESPERADO:
+- Mensaje de éxito
+- Cambios reflejados en la lista
+
+
+6.5 PRUEBA DE ELIMINAR CALIFICACIÓN
+------------------------------------
+1. En lista de calificaciones, click en "Eliminar"
+2. Confirmar eliminación
+
+RESULTADO ESPERADO:
+- Mensaje de confirmación
+- Calificación removida de la lista
+
+
+6.6 PRUEBA DE CARGAS MASIVAS - DESCARGA DE PLANTILLA
+-----------------------------------------------------
+1. Ve a: http://localhost:8000/accounts/cargas/plantilla/
+2. Debería descargarse un archivo Excel
+
+RESULTADO ESPERADO: Archivo "plantilla_carga_masiva.xlsx" descargado
+
+
+6.7 PRUEBA DE LOGS
+------------------
+1. Ve a: http://localhost:8000/accounts/logs/
+2. Verifica que se muestren:
+      - Logs de operaciones recientes
+      - Usuario que realizó la acción
+      - Fecha y hora
+      - Tipo de operación
+
+RESULTADO ESPERADO: Lista de logs con operaciones recientes
+
+
+================================================================================
+7. PRUEBAS DE API REST
+================================================================================
+
+NOTA: Reemplaza TU_TOKEN con el token JWT obtenido en la sección 5.2
+
+7.1 PRUEBA DE HEALTH CHECK
+--------------------------
+curl http://localhost:8000/api/v1/health/ \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+    "status": "healthy",
+    "timestamp": "2025-11-19T10:30:00.000Z"
+}
+
+
+7.2 PRUEBA DE LISTAR CALIFICACIONES
+------------------------------------
+curl http://localhost:8000/api/v1/calificaciones/ \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+    "count": 10,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "id": 1,
+            "corredor_dueno": "Corredor ABC",
+            "instrumento": "BONO-001",
+            ...
+        }
+    ]
+}
+
+
+7.3 PRUEBA DE CREAR CALIFICACIÓN (API)
+---------------------------------------
+curl -X POST http://localhost:8000/api/v1/calificaciones/ \
+    -H "Authorization: Bearer TU_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "corredor_dueno": "Corredor XYZ",
+        "instrumento": "BONO-API-TEST",
+        "mercado": "LOCAL",
+        "divisa": "CLP",
+        "valor_historico": 1500000.00,
+        "fecha_pago": "2025-12-31"
+    }'
+
+RESULTADO ESPERADO:
+HTTP 201 Created
+{
+    "id": 2,
+    "corredor_dueno": "Corredor XYZ",
+    "instrumento": "BONO-API-TEST",
+    "mercado": "LOCAL",
+    ...
+}
+
+
+7.4 PRUEBA DE VER DETALLE DE CALIFICACIÓN
+------------------------------------------
+curl http://localhost:8000/api/v1/calificaciones/1/ \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+    "id": 1,
+    "corredor_dueno": "Corredor ABC",
+    ...
+}
+
+
+7.5 PRUEBA DE ACTUALIZAR CALIFICACIÓN (PUT)
+--------------------------------------------
+curl -X PUT http://localhost:8000/api/v1/calificaciones/1/ \
+    -H "Authorization: Bearer TU_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "corredor_dueno": "Corredor ABC Updated",
+        "instrumento": "BONO-001",
+        "mercado": "LOCAL",
+        "divisa": "CLP",
+        "valor_historico": 2500000.00,
+        "fecha_pago": "2025-12-31"
+    }'
+
+RESULTADO ESPERADO:
+HTTP 200 OK con datos actualizados
+
+
+7.6 PRUEBA DE ACTUALIZAR PARCIAL (PATCH)
+-----------------------------------------
+curl -X PATCH http://localhost:8000/api/v1/calificaciones/1/ \
+    -H "Authorization: Bearer TU_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "valor_historico": 3000000.00
+    }'
+
+RESULTADO ESPERADO:
+HTTP 200 OK con solo el campo modificado
+
+
+7.7 PRUEBA DE ELIMINAR CALIFICACIÓN (API)
+------------------------------------------
+curl -X DELETE http://localhost:8000/api/v1/calificaciones/1/ \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+HTTP 204 No Content
+
+
+7.8 PRUEBA DE FILTROS
+---------------------
+# Filtrar por mercado
+curl "http://localhost:8000/api/v1/calificaciones/?mercado=LOCAL" \
+    -H "Authorization: Bearer TU_TOKEN"
+
+# Filtrar por divisa
+curl "http://localhost:8000/api/v1/calificaciones/?divisa=CLP" \
+    -H "Authorization: Bearer TU_TOKEN"
+
+# Buscar por texto
+curl "http://localhost:8000/api/v1/calificaciones/?search=BONO" \
+    -H "Authorization: Bearer TU_TOKEN"
+
+# Ordenar por fecha (descendente)
+curl "http://localhost:8000/api/v1/calificaciones/?ordering=-created_at" \
+    -H "Authorization: Bearer TU_TOKEN"
+
+# Combinar filtros
+curl "http://localhost:8000/api/v1/calificaciones/?mercado=LOCAL&divisa=CLP&ordering=-created_at" \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO: Resultados filtrados según parámetros
+
+
+7.9 PRUEBA DE PAGINACIÓN
+------------------------
+curl "http://localhost:8000/api/v1/calificaciones/?page=1&page_size=10" \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+    "count": 50,
+    "next": "http://localhost:8000/api/v1/calificaciones/?page=2",
+    "previous": null,
+    "results": [...]
+}
+
+
+7.10 PRUEBA DE ESTADÍSTICAS DEL DASHBOARD
+------------------------------------------
+curl http://localhost:8000/api/v1/dashboard/stats/ \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+    "total_calificaciones": 10,
+    "total_cargas": 5,
+    "calificaciones_por_mercado": {...},
+    "calificaciones_por_divisa": {...},
+    ...
+}
+
+
+================================================================================
+8. PRUEBAS DE CARGAS MASIVAS
+================================================================================
+
+8.1 PREPARAR ARCHIVO EXCEL DE PRUEBA
+-------------------------------------
+Crea un archivo Excel con las siguientes columnas:
+
+| corredor_dueno | instrumento | mercado | divisa | valor_historico | fecha_pago |
+|---------------|-------------|---------|--------|-----------------|------------|
+| Corredor A        | BONO-001        | LOCAL      | CLP        | 1000000                  | 2025-12-31 |
+| Corredor B        | BONO-002        | LOCAL      | CLP        | 2000000                  | 2025-12-31 |
+| Corredor C        | BONO-003        | INTERNACIONAL | USD | 50000 | 2025-12-31 |
+
+Guarda como: test_carga.xlsx
+
+
+8.2 PRUEBA DE CARGA MASIVA (WEB)
+---------------------------------
+1. Ve a: http://localhost:8000/accounts/cargas/nueva/
+2. Selecciona el archivo: test_carga.xlsx
+3. Tipo de Carga: FACTORES
+4. Mercado: LOCAL
+5. Click en "Subir"
+6. Espera la confirmación
+
+RESULTADO ESPERADO:
+- Mensaje de éxito
+- Redirigido a detalle de carga
+- Estado: EN_PROCESO o COMPLETADA
+
+
+8.3 PRUEBA DE CARGA MASIVA (API)
+---------------------------------
+curl -X POST http://localhost:8000/api/v1/cargas/upload/ \
+    -H "Authorization: Bearer TU_TOKEN" \
+    -F "archivo=@test_carga.xlsx" \
+    -F "tipo_carga=FACTORES" \
+    -F "mercado=LOCAL"
+
+RESULTADO ESPERADO:
+{
+    "id": 1,
+    "archivo": "cargas/test_carga.xlsx",
+    "tipo_carga": "FACTORES",
+    "estado": "EN_PROCESO",
+    "total_registros": 3,
+    ...
+}
+
+
+8.4 VERIFICAR ESTADO DE CARGA
+------------------------------
+# VIA WEB:
+1. Ve a: http://localhost:8000/accounts/cargas/
+2. Busca tu carga reciente
+3. Click en el ID para ver detalles
+
+# VIA API:
+curl http://localhost:8000/api/v1/cargas/1/ \
+    -H "Authorization: Bearer TU_TOKEN"
+
+RESULTADO ESPERADO:
+{
+    "id": 1,
+    "estado": "COMPLETADA",
+    "registros_exitosos": 3,
+    "registros_fallidos": 0,
+    ...
+}
+
+
+8.5 MONITOREAR PROCESAMIENTO EN KAFKA
+--------------------------------------
+1. Ve a: http://localhost:8000/kafka/dashboard/
+2. Verifica que se muestre:
+      - Topics activos
+      - Mensajes procesados
+      - Estado de consumidores
+
+# O vía logs:
+tail -f logs/kafka.log
+
+
+================================================================================
+9. PRUEBAS DE KAFKA
+================================================================================
+
+9.1 VERIFICAR CONTENEDORES DE KAFKA
+------------------------------------
+docker-compose ps
+
+RESULTADO ESPERADO:
+nuam-kafka                Up (healthy)
+nuam-zookeeper        Up (healthy)
+
+
+9.2 VERIFICAR TOPICS DE KAFKA
+------------------------------
+docker exec -it nuam-kafka kafka-topics \
+    --bootstrap-server localhost:9092 \
+    --list
+
+RESULTADO ESPERADO (topics esperados):
+- nuam.carga-masiva.events
+- nuam.calificacion.events
+- nuam.auditoria.logs
+- nuam.notificaciones.queue
+- nuam.errores.dlq
+
+
+9.3 VER MENSAJES DE UN TOPIC
+-----------------------------
+docker exec -it nuam-kafka kafka-console-consumer \
+    --bootstrap-server localhost:9092 \
+    --topic nuam.carga-masiva.events \
+    --from-beginning
+
+RESULTADO ESPERADO: Mensajes JSON de eventos de carga masiva
+
+
+9.4 PRUEBA DE KAFKA UI
+----------------------
+1. Abre navegador: http://localhost:8080
+2. Verifica que se muestre:
+      - Cluster "nuam-cluster"
+      - Topics disponibles
+      - Brokers activos
+
+RESULTADO ESPERADO: Interfaz de Kafka UI funcional
+
+
+9.5 PRUEBA DE KAFDROP
+---------------------
+1. Abre navegador: http://localhost:9000
+2. Explora topics
+3. Ver mensajes
+
+RESULTADO ESPERADO: Interfaz de Kafdrop funcional
+
+
+9.6 VERIFICAR CONSUMIDORES ACTIVOS
+-----------------------------------
+# En la terminal donde corren los consumidores, verifica logs:
+# Deberías ver mensajes como:
+
+[INFO] Consumidor de carga masiva iniciado
+[INFO] Consumidor de calificaciones iniciado
+[INFO] Consumidor de auditoría iniciado
+
+
+================================================================================
+10. VERIFICACIÓN DE SALUD DEL SISTEMA
+================================================================================
+
+10.1 SCRIPT DE VERIFICACIÓN COMPLETA
+-------------------------------------
+#!/bin/bash
+# Guardar como: verificar_sistema.sh
+
+echo "=== VERIFICACIÓN DEL SISTEMA NUAM ==="
+echo ""
+
+echo "1. Verificando Docker..."
+docker-compose ps
+echo ""
+
+echo "2. Verificando Django..."
+curl -s http://localhost:8000/ | head -n 5
+echo ""
+
+echo "3. Verificando API Health..."
+curl -s http://localhost:8000/api/v1/health/
+echo ""
+
+echo "4. Verificando Kafka..."
+curl -s http://localhost:8000/kafka/health/
+echo ""
+
+echo "5. Verificando Kafka UI..."
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
+echo ""
+
+echo "6. Verificando Kafdrop..."
+curl -s -o /dev/null -w "%{http_code}" http://localhost:9000
+echo ""
+
+echo "=== VERIFICACIÓN COMPLETADA ==="
+
+
+Ejecutar:
+chmod +x verificar_sistema.sh
+./verificar_sistema.sh
+
+
+10.2 CHECKLIST DE SALUD
+------------------------
+□ Docker Compose: Todos los contenedores UP y healthy
+□ PostgreSQL: Base de datos accesible
+□ Django: Servidor corriendo en puerto 8000
+□ Kafka: Broker activo
+□ Zookeeper: Servicio healthy
+□ Consumidores: Procesando mensajes
+□ Kafka UI: Accesible en puerto 8080
+□ Kafdrop: Accesible en puerto 9000
+□ API: Respondiendo correctamente
+□ Swagger: Documentación visible
+
+
+================================================================================
+11. CASOS DE PRUEBA COMPLETOS
+================================================================================
+
+CASO DE PRUEBA 1: FLUJO COMPLETO DE CALIFICACIÓN
+-------------------------------------------------
+OBJETIVO: Crear, editar y eliminar una calificación tributaria
+
+PASOS:
+1. Login en http://localhost:8000/accounts/login/
+2. Ir a calificaciones
+3. Crear nueva calificación con datos de prueba
+4. Verificar que aparezca en la lista
+5. Editar valor histórico
+6. Verificar cambios
+7. Eliminar calificación
+8. Verificar eliminación
+
+CRITERIO DE ÉXITO: Todas las operaciones completas sin errores
+
+
+CASO DE PRUEBA 2: FLUJO COMPLETO DE CARGA MASIVA
+-------------------------------------------------
+OBJETIVO: Cargar archivo Excel y verificar procesamiento
+
+PASOS:
+1. Preparar archivo Excel con 10 registros
+2. Login en sistema
+3. Ir a "Nueva Carga Masiva"
+4. Subir archivo
+5. Verificar estado "EN_PROCESO"
+6. Esperar 10 segundos
+7. Refrescar página
+8. Verificar estado "COMPLETADA"
+9. Verificar cantidad de registros exitosos: 10
+10. Ir a lista de calificaciones
+11. Verificar que existan los 10 nuevos registros
+
+CRITERIO DE ÉXITO: 10/10 registros procesados exitosamente
+
+
+CASO DE PRUEBA 3: AUTENTICACIÓN JWT VIA API
+--------------------------------------------
+OBJETIVO: Obtener token y usarlo para acceder a recursos
+
+PASOS:
+1. Obtener token con credenciales correctas
+2. Guardar access token
+3. Usar token para listar calificaciones
+4. Usar token para crear calificación
+5. Usar token para actualizar calificación
+6. Usar token para eliminar calificación
+7. Intentar usar token inválido
+
+CRITERIO DE ÉXITO: 
+- Token válido permite todas las operaciones
+- Token inválido retorna 401
+
+
+CASO DE PRUEBA 4: FILTROS Y BÚSQUEDA
+-------------------------------------
+OBJETIVO: Probar todos los filtros de la API
+
+PASOS:
+1. Crear calificaciones con diferentes:
+      - Mercados (LOCAL, INTERNACIONAL)
+      - Divisas (CLP, USD, EUR)
+      - Instrumentos variados
+2. Filtrar por mercado LOCAL
+3. Filtrar por divisa CLP
+4. Buscar por texto "BONO"
+5. Ordenar por fecha descendente
+6. Combinar filtros: LOCAL + CLP + ordenado
+7. Probar paginación con page_size=5
+
+CRITERIO DE ÉXITO: Todos los filtros retornan resultados correctos
+
+
+CASO DE PRUEBA 5: PROCESAMIENTO ASÍNCRONO CON KAFKA
+----------------------------------------------------
+OBJETIVO: Verificar que Kafka procesa eventos correctamente
+
+PASOS:
+1. Iniciar consumidores de Kafka
+2. Crear una calificación vía API
+3. Verificar en logs de Kafka que se creó evento
+4. Ver en Kafka UI el mensaje en topic "nuam.calificacion.events"
+5. Hacer carga masiva de 100 registros
+6. Verificar en Dashboard Kafka el procesamiento
+7. Ver logs de consumidor de carga masiva
+8. Verificar que todos los registros se procesaron
+
+CRITERIO DE ÉXITO: 
+- Eventos creados en Kafka
+- Consumidores procesan todos los mensajes
+- No hay mensajes en DLQ (Dead Letter Queue)
+
+
+================================================================================
+12. SOLUCIÓN DE PROBLEMAS COMUNES
+================================================================================
+
+PROBLEMA 1: Docker no inicia Kafka
+-----------------------------------
+SÍNTOMAS: 
+- Contenedor nuam-kafka se detiene
+- Error "Connection refused" al intentar conectar
+
+SOLUCIÓN:
+1. Ver logs: docker logs nuam-kafka
+2. Verificar que Zookeeper esté healthy: docker-compose ps
+3. Limpiar y reiniciar:
+      docker-compose down -v
+      docker-compose up -d
+
+
+PROBLEMA 2: Error 401 en API
+-----------------------------
+SÍNTOMAS:
+- Respuesta: "Authentication credentials were not provided"
+
+SOLUCIÓN:
+1. Verificar que tienes el token JWT
+2. Verificar que el header sea: "Authorization: Bearer TU_TOKEN"
+3. Verificar que el token no haya expirado
+4. Obtener nuevo token si es necesario
+
+
+PROBLEMA 3: Carga masiva no procesa
+------------------------------------
+SÍNTOMAS:
+- Carga se queda en estado "EN_PROCESO" indefinidamente
+
+SOLUCIÓN:
+1. Verificar que consumidores de Kafka estén corriendo:
+      ps aux | grep run_kafka_consumers
+2. Ver logs de Kafka: tail -f logs/kafka.log
+3. Reiniciar consumidores:
+      python manage.py run_kafka_consumers
+
+
+PROBLEMA 4: Puerto 8000 ocupado
+--------------------------------
+SÍNTOMAS:
+- Error: "That port is already in use"
+
+SOLUCIÓN:
+1. Ver qué está usando el puerto:
+      lsof -i :8000    # Mac/Linux
+      netstat -ano | findstr :8000    # Windows
+2. Matar proceso o usar otro puerto:
+      python manage.py runserver 8001
+
+
+PROBLEMA 5: Error de migraciones
+---------------------------------
+SÍNTOMAS:
+- Error: "No such table" o "relation does not exist"
+
+SOLUCIÓN:
+1. Aplicar migraciones:
+      python manage.py migrate
+2. Si persiste, hacer reset (CUIDADO: borra datos):
+      python manage.py flush
+      python manage.py migrate
+
+
+PROBLEMA 6: Swagger no carga
+-----------------------------
+SÍNTOMAS:
+- Error 404 o 500 en /swagger/
+
+SOLUCIÓN:
+1. Verificar que drf-yasg esté instalado:
+      pip install drf-yasg
+2. Verificar URLs en nuam/urls.py
+3. Colectar archivos estáticos:
+      python manage.py collectstatic --noinput
+
+
+================================================================================
+CONTACTO Y SOPORTE
+================================================================================
+
+GitHub: https://github.com/DykeByte/Nuam-main
+Issues: https://github.com/DykeByte/Nuam-main/issues
+Autor: DykeByte
+
+================================================================================
+NOTAS FINALES
+================================================================================
+
+- Todos los comandos deben ejecutarse con el entorno virtual activado
+- Los tokens JWT expiran después de cierto tiempo (configurado en settings)
+- Los logs se guardan en la carpeta logs/ del proyecto
+- Para ambiente de producción, cambiar DEBUG=False en .env
+- Backup regular de la base de datos es recomendado
+- Monitorear logs de Kafka para detectar problemas temprano
+- Realizar pruebas en entorno de desarrollo antes de producción
+
+================================================================================
+13. MÉTRICAS Y MONITOREO
+================================================================================
+
+13.1 LOGS DEL SISTEMA
+---------------------
+Ubicación de logs:
+logs/
+├── django.log                    - Logs generales de Django
+├── api.log                          - Logs de peticiones HTTP
+├── kafka.log                      - Logs de productores/consumidores
+├── accounts.log                - Logs de autenticación
+├── carga_excel.log          - Logs de procesamiento Excel
+├── errors.log                    - Todos los errores
+└── security.log                - Logs de seguridad
+
+Ver logs en tiempo real:
+------------------------
+# Logs de API
+tail -f logs/api.log
+
+# Logs de Kafka
+tail -f logs/kafka.log
+
+# Solo errores
+tail -f logs/errors.log
+
+# Todos los logs
+tail -f logs/*.log
+
+Buscar errores específicos:
+---------------------------
+# Errores de hoy
+grep "ERROR" logs/errors.log | grep "$(date +%Y-%m-%d)"
+
+# Errores de un usuario
+grep "User: admin" logs/api.log | grep "ERROR"
+
+# Últimos 50 errores
+tail -n 50 logs/errors.log
+
+
+13.2 MÉTRICAS DE PERFORMANCE
+-----------------------------
+# Verificar queries lentas
+grep "duration_ms" logs/api.log | awk '$NF > 1000'
+
+# Endpoints más usados
+grep "REQUEST" logs/api.log | awk '{print $7}' | sort | uniq -c | sort -rn
+
+# Errores por endpoint
+grep "ERROR" logs/api.log | awk '{print $7}' | sort | uniq -c
+
+
+13.3 MONITOREO DE KAFKA
+------------------------
+# Ver estado de consumidores
+curl http://localhost:8000/kafka/health/
+
+# Ver métricas detalladas
+curl http://localhost:8000/kafka/metrics/ \
+    -H "Authorization: Bearer TU_TOKEN"
+
+# Ver lag de consumidores (Docker)
+docker exec -it nuam-kafka kafka-consumer-groups \
+    --bootstrap-server localhost:9092 \
+    --describe \
+    --all-groups
+
+
+13.4 MONITOREO DE BASE DE DATOS
+--------------------------------
+# Conectar a PostgreSQL
+psql -U nuam_user -d nuam_db
+
+# Ver tablas
+\dt
+
+# Ver tamaño de tablas
+SELECT 
+        schemaname,
+        tablename,
+        pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+
+# Salir
+\q
+
+
+================================================================================
+14. BACKUP Y RESTAURACIÓN
+================================================================================
+
+14.1 BACKUP DE BASE DE DATOS
+-----------------------------
+# Backup completo
+pg_dump -U nuam_user -d nuam_db > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Backup comprimido
+pg_dump -U nuam_user -d nuam_db | gzip > backup_$(date +%Y%m%d).sql.gz
+
+# Backup solo de datos
+pg_dump -U nuam_user -d nuam_db --data-only > datos_$(date +%Y%m%d).sql
+
+
+14.2 RESTAURACIÓN DE BASE DE DATOS
+-----------------------------------
+# Restaurar desde backup
+psql -U nuam_user -d nuam_db < backup_20251119.sql
+
+# Restaurar desde backup comprimido
+gunzip -c backup_20251119.sql.gz | psql -U nuam_user -d nuam_db
+
+
+14.3 BACKUP DE ARCHIVOS
+------------------------
+# Backup de cargas masivas
+tar -czf cargas_backup_$(date +%Y%m%d).tar.gz media/cargas/
+
+# Backup de logs
+tar -czf logs_backup_$(date +%Y%m%d).tar.gz logs/
+
+
+================================================================================
+15. COMANDOS ÚTILES DE DJANGO
+================================================================================
+
+15.1 GESTIÓN DE MIGRACIONES
+----------------------------
+# Crear nuevas migraciones
+python manage.py makemigrations
+
+# Aplicar migraciones
+python manage.py migrate
+
+# Ver estado de migraciones
+python manage.py showmigrations
+
+# Revertir migración
+python manage.py migrate app_name 0001_migration_name
+
+
+15.2 GESTIÓN DE USUARIOS
+-------------------------
+# Crear superusuario
+python manage.py createsuperuser
+
+# Cambiar contraseña
+python manage.py changepassword username
+
+# Shell interactivo
+python manage.py shell
+
+# En shell, crear usuario programáticamente:
+from django.contrib.auth.models import User
+user = User.objects.create_user('usuario', 'email@example.com', 'password')
+
+
+15.3 LIMPIEZA Y MANTENIMIENTO
+------------------------------
+# Limpiar base de datos (CUIDADO: borra todo)
+python manage.py flush
+
+# Verificar proyecto
+python manage.py check
+
+# Verificar deployment
+python manage.py check --deploy
+
+# Colectar archivos estáticos
+python manage.py collectstatic --noinput
+
+
+15.4 SHELL INTERACTIVO
+-----------------------
+python manage.py shell
+
+# Ejemplos de uso en shell:
+from api.models import CalificacionTributaria
+
+# Ver todas las calificaciones
+CalificacionTributaria.objects.all()
+
+# Filtrar por mercado
+CalificacionTributaria.objects.filter(mercado='LOCAL')
+
+# Contar registros
+CalificacionTributaria.objects.count()
+
+# Crear calificación
+cal = CalificacionTributaria.objects.create(
+        corredor_dueno='Test',
+        instrumento='BONO-SHELL',
+        mercado='LOCAL',
+        divisa='CLP',
+        valor_historico=1000000,
+        fecha_pago='2025-12-31'
+)
+
+
+================================================================================
+16. TESTING AUTOMATIZADO
+================================================================================
+
+16.1 EJECUTAR TESTS
+-------------------
+# Todos los tests
+python manage.py test
+
+# Tests de una app específica
+python manage.py test api
+python manage.py test accounts
+
+# Test específico
+python manage.py test api.tests.test_calificaciones
+
+# Con verbosidad
+python manage.py test --verbosity=2
+
+
+16.2 TESTS CON PYTEST
+---------------------
+# Instalar pytest (si no está)
+pip install pytest pytest-django pytest-cov
+
+# Ejecutar todos los tests
+pytest
+
+# Con cobertura
+pytest --cov=api --cov=kafka_app --cov=accounts
+
+# Generar reporte HTML de cobertura
+pytest --cov=api --cov-report=html
+
+
+16.3 TESTS DE KAFKA
+-------------------
+# Script de prueba de Kafka
+python test_kafka.py
+
+# Script de prueba de API
+python test_api.py
+
+
+================================================================================
+17. DESPLIEGUE A PRODUCCIÓN
+================================================================================
+
+17.1 CHECKLIST PRE-PRODUCCIÓN
+------------------------------
+□ Cambiar DEBUG=False en .env
+□ Configurar SECRET_KEY único y seguro
+□ Configurar ALLOWED_HOSTS con dominio real
+□ Configurar base de datos de producción
+□ Configurar servidor SMTP para emails
+□ Habilitar HTTPS/SSL
+□ Configurar CORS correctamente
+□ Revisar configuración de CSRF
+□ Configurar archivos estáticos con WhiteNoise o CDN
+□ Configurar media files en S3 u otro storage
+□ Configurar Gunicorn
+□ Configurar Nginx como reverse proxy
+□ Configurar certificados SSL (Let's Encrypt)
+□ Configurar monitoreo (Sentry, Prometheus)
+□ Configurar backups automáticos
+□ Documentar proceso de deployment
+
+
+17.2 VARIABLES DE ENTORNO PRODUCCIÓN
+-------------------------------------
+# .env.production
+DEBUG=False
+SECRET_KEY=[generar clave única]
+ALLOWED_HOSTS=tudominio.com,www.tudominio.com
+
+DATABASE_NAME=nuam_db_prod
+DATABASE_USER=nuam_user_prod
+DATABASE_PASSWORD=[password seguro]
+DATABASE_HOST=db.tudominio.com
+DATABASE_PORT=5432
+
+KAFKA_BOOTSTRAP_SERVERS=kafka-prod:9092
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=noreply@tudominio.com
+EMAIL_HOST_PASSWORD=[app password]
+
+SENTRY_DSN=[tu sentry dsn]
+
+
+17.3 COMANDOS DE DEPLOYMENT
+----------------------------
+# 1. Actualizar código
+git pull origin main
+
+# 2. Activar entorno virtual
+source venv/bin/activate
+
+# 3. Instalar dependencias
+pip install -r requirements.txt
+
+# 4. Aplicar migraciones
+python manage.py migrate
+
+# 5. Colectar archivos estáticos
+python manage.py collectstatic --noinput
+
+# 6. Verificar deployment
+python manage.py check --deploy
+
+# 7. Reiniciar Gunicorn
+sudo systemctl restart gunicorn
+
+# 8. Reiniciar Nginx
+sudo systemctl restart nginx
+
+# 9. Reiniciar consumidores Kafka
+sudo systemctl restart nuam-kafka-consumers
+
+
+17.4 GUNICORN CONFIGURATION
+----------------------------
+# /etc/systemd/system/gunicorn.service
+[Unit]
+Description=gunicorn daemon for NUAM
+After=network.target
+
+[Service]
+User=nuam
+Group=www-data
+WorkingDirectory=/home/nuam/Nuam-main
+Environment="PATH=/home/nuam/Nuam-main/venv/bin"
+ExecStart=/home/nuam/Nuam-main/venv/bin/gunicorn \
+        --workers 4 \
+        --bind unix:/run/gunicorn.sock \
+        --timeout 120 \
+        nuam.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
+
+
+17.5 NGINX CONFIGURATION
+------------------------
+# /etc/nginx/sites-available/nuam
+server {
+        listen 80;
+        server_name tudominio.com www.tudominio.com;
+        return 301 https://$server_name$request_uri;
+}
+
+server {
+        listen 443 ssl http2;
+        server_name tudominio.com www.tudominio.com;
+
+        ssl_certificate /etc/letsencrypt/live/tudominio.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/tudominio.com/privkey.pem;
+
+        client_max_body_size 100M;
+
+        location /static/ {
+                alias /home/nuam/Nuam-main/staticfiles/;
+        }
+
+        location /media/ {
+                alias /home/nuam/Nuam-main/media/;
+        }
+
+        location / {
+                proxy_pass http://unix:/run/gunicorn.sock;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+        }
+}
+
+
+================================================================================
+18. SEGURIDAD
+================================================================================
+
+18.1 MEJORES PRÁCTICAS
+----------------------
+✓ Nunca commitear archivos .env al repositorio
+✓ Usar passwords seguros (mínimo 12 caracteres)
+✓ Cambiar SECRET_KEY en producción
+✓ Habilitar HTTPS en producción
+✓ Mantener dependencias actualizadas
+✓ Revisar logs de seguridad regularmente
+✓ Limitar intentos de login
+✓ Usar tokens JWT con expiración corta
+✓ Validar y sanitizar entradas de usuario
+✓ Configurar CORS correctamente
+
+
+18.2 ACTUALIZAR DEPENDENCIAS
+-----------------------------
+# Ver dependencias desactualizadas
+pip list --outdated
+
+# Actualizar todas las dependencias
+pip install --upgrade -r requirements.txt
+
+# Generar nuevo requirements.txt
+pip freeze > requirements.txt
+
+
+18.3 REVISAR VULNERABILIDADES
+------------------------------
+# Instalar safety
+pip install safety
+
+# Escanear vulnerabilidades
+safety check
+
+# Escanear con reporte detallado
+safety check --full-report
+
+
+================================================================================
+19. OPTIMIZACIÓN
+================================================================================
+
+19.1 OPTIMIZACIÓN DE QUERIES
+-----------------------------
+# Ver queries ejecutadas (en shell)
+from django.db import connection
+from django.db import reset_queries
+
+reset_queries()
+# ... ejecutar código ...
+print(len(connection.queries))
+for query in connection.queries:
+        print(query)
+
+
+19.2 CACHÉ
+----------
+# Limpiar caché
+python manage.py shell
+>>> from django.core.cache import cache
+>>> cache.clear()
+
+# Ver estadísticas de caché (si usas Redis)
+redis-cli info stats
+
+
+19.3 ÍNDICES DE BASE DE DATOS
+------------------------------
+# Verificar índices creados
+python manage.py sqlmigrate api [migration_number]
+
+# Analizar performance de queries (PostgreSQL)
+psql -U nuam_user -d nuam_db
+
+EXPLAIN ANALYZE SELECT * FROM api_calificaciontributaria 
+WHERE mercado = 'LOCAL' AND divisa = 'CLP';
+
+
+================================================================================
+20. GLOSARIO DE TÉRMINOS
+================================================================================
+
+API                    - Application Programming Interface
+CRUD                  - Create, Read, Update, Delete
+DLQ                    - Dead Letter Queue (cola de mensajes fallidos)
+DTO                    - Data Transfer Object
+JWT                    - JSON Web Token
+ORM                    - Object-Relational Mapping
+REST                  - Representational State Transfer
+SSL                    - Secure Sockets Layer
+TLS                    - Transport Layer Security
+WSGI                  - Web Server Gateway Interface
+
+Calificación Tributaria - Registro de instrumento financiero con datos fiscales
+Carga Masiva - Proceso de importación múltiple desde Excel
+Mercado            - LOCAL o INTERNACIONAL
+Divisa              - Moneda (CLP, USD, EUR, COP, PEN)
+Topic                - Canal de mensajes en Kafka
+Consumer          - Consumidor de mensajes Kafka
+Producer          - Productor de mensajes Kafka
+
+
+================================================================================
+21. RECURSOS ADICIONALES
+================================================================================
+
+DOCUMENTACIÓN OFICIAL:
+- Django: https://docs.djangoproject.com/
+- Django REST Framework: https://www.django-rest-framework.org/
+- Apache Kafka: https://kafka.apache.org/documentation/
+- PostgreSQL: https://www.postgresql.org/docs/
+- Docker: https://docs.docker.com/
+
+TUTORIALES Y GUÍAS:
+- JWT Authentication: https://django-rest-framework-simplejwt.readthedocs.io/
+- Swagger/OpenAPI: https://drf-yasg.readthedocs.io/
+- Kafka Python: https://kafka-python.readthedocs.io/
+
+COMUNIDAD:
+- Django Forum: https://forum.djangoproject.com/
+- Stack Overflow: https://stackoverflow.com/questions/tagged/django
+- Reddit: r/django
+
+
+================================================================================
+22. CHANGELOG Y VERSIONES
+================================================================================
+
+v1.0.0 - Noviembre 2025
+-----------------------
+- Sistema base de calificaciones tributarias
+- CRUD completo con API REST
+- Cargas masivas desde Excel
+- Integración con Apache Kafka
+- Autenticación JWT
+- Dashboard con estadísticas
+- Sistema de logs y auditoría
+- Soporte multi-divisa
+- Documentación Swagger
+
+
+ROADMAP FUTURO:
+---------------
+- [ ] Exportación a PDF de reportes
+- [ ] Gráficos avanzados en dashboard
+- [ ] Notificaciones por email
+- [ ] Integración con servicios externos
+- [ ] App móvil
+- [ ] Reportes personalizados
+- [ ] Machine Learning para predicciones
+- [ ] Multi-tenancy
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
+
+Última actualización: Noviembre 19, 2025
+Versión del documento: 1.0
+Mantenido por: DykeByte
+
+Para reportar errores o sugerencias:
+https://github.com/DykeByte/Nuam-main/issues
+
+================================================================================
