@@ -153,11 +153,124 @@ TESTING
 - python test_kafka.py
 - python test_api.py
 
-LOGS Y MONITOREO
-----------------
-- tail -f logs/django.log
-- tail -f logs/api.log
-- tail -f logs/carga_excel.log
+📊 SISTEMA DE LOGGING AVANZADO
+------------------------------
+
+ARQUITECTURA DE LOGGING IMPLEMENTADA
+El proyecto cuenta con un sistema de logging robusto y escalable que 
+registra todas las operaciones críticas del sistema.
+
+📁 ARCHIVOS DE LOG
+-----------------
+logs/
+├── django.log          Logs generales de Django (10MB rotación)
+├── api.log            Logs de API y peticiones HTTP (10MB rotación)
+├── kafka.log          Logs de productores/consumidores Kafka (10MB rotación)
+├── accounts.log       Logs de autenticación y usuarios (5MB rotación)
+├── carga_excel.log    Logs de procesamiento de Excel (10MB rotación)
+├── errors.log         Logs de todos los errores (10MB rotación)
+└── security.log       Logs de seguridad y auditoría (5MB rotación)
+
+🎯 NIVELES DE LOGGING
+--------------------
+- DEBUG: Información detallada para debugging (desarrollo)
+- INFO: Eventos normales de la aplicación
+- WARNING: Eventos inusuales pero manejables
+- ERROR: Errores que requieren atención
+- CRITICAL: Errores críticos del sistema
+
+✨ CARACTERÍSTICAS IMPLEMENTADAS
+-------------------------------
+
+1. MIDDLEWARE DE LOGGING
+   Registra automáticamente todas las peticiones HTTP:
+   - Método y ruta de la petición
+   - Usuario autenticado
+   - Dirección IP del cliente
+   - Tiempo de respuesta en milisegundos
+   - Status code HTTP
+
+   Ejemplo de log:
+   INFO | ⬇️ REQUEST | GET /api/v1/calificaciones/ | User: admin | IP: 127.0.0.1
+   INFO | ⬆️ RESPONSE | {"method": "GET", "status": 200, "duration_ms": 45.23}
+
+2. LOGGING EN API VIEWS
+   Todos los endpoints críticos tienen logging detallado:
+   - 📝 Creación: "Creando calificación | User: admin"
+   - 📋 Listado: "Listando calificaciones | Total: 150"
+   - 🗑️ Eliminación: "Eliminando calificación | ID: 123"
+   - ❌ Errores: "Error creando calificación: [detalle]"
+
+3. LOGGING EN KAFKA
+   Productores y consumidores con logging completo:
+   
+   Productores:
+   ✅ Mensaje enviado - Topic: nuam.carga-masiva.events
+      Partition: 0, Offset: 12345, Key: carga_123
+   
+   Consumidores:
+   📥 Mensaje recibido - Topic: nuam.calificacion.events
+   🟢 CARGA COMPLETADA - ID: 123, Exitosos: 500, Fallidos: 5
+
+4. ROTACIÓN AUTOMÁTICA
+   - Rotación por tamaño (5-10MB según tipo de log)
+   - Backup de 5-10 archivos históricos
+   - Gestión automática de espacio en disco
+
+📖 COMANDOS DE MONITOREO
+------------------------
+
+Ver logs en tiempo real:
+  tail -f logs/api.log              # Logs de API
+  tail -f logs/kafka.log            # Logs de Kafka
+  tail -f logs/errors.log           # Solo errores
+  tail -f logs/*.log                # Todos los logs
+
+Buscar errores específicos:
+  grep "ERROR" logs/errors.log | grep "$(date +%Y-%m-%d)"
+  grep "User: admin" logs/api.log | grep "ERROR"
+  tail -n 50 logs/errors.log
+
+Filtrar por endpoint:
+  grep "/api/v1/calificaciones" logs/api.log
+  grep "carga" logs/api.log
+
+Análisis de performance:
+  # Requests más lentas (>1000ms)
+  grep "duration_ms" logs/api.log | awk '$NF > 1000'
+  
+  # Contar requests por endpoint
+  grep "REQUEST" logs/api.log | awk '{print $7}' | sort | uniq -c
+
+📈 ESTADÍSTICAS
+--------------
+El sistema registra:
+✅ Todas las peticiones HTTP (100%)
+✅ Todos los eventos de Kafka
+✅ Todas las operaciones CRUD
+✅ Todos los errores y excepciones
+✅ Eventos de seguridad (login, logout, accesos denegados)
+✅ Cargas masivas y procesamiento de Excel
+
+🛡️ SEGURIDAD EN LOGS
+--------------------
+- No se registran contraseñas ni tokens sensibles
+- IPs ofuscadas en producción
+- Logs con permisos restrictivos (lectura solo admin)
+- Logs de seguridad separados para auditoría
+
+📊 FORMATO DE LOGS
+-----------------
+Formato estándar compatible con:
+- ELK Stack (Elasticsearch, Logstash, Kibana)
+- Grafana Loki
+- Splunk
+- Datadog
+- CloudWatch (AWS)
+
+Ejemplo de formato:
+INFO 2025-11-19 03:31:46 api views health_check Línea:464 | 
+  🏥 API: Health check ejecutado
 
 COMANDOS ÚTILES
 ---------------
