@@ -124,20 +124,59 @@ def registro(request):
 # Vistas de Autenticación Web
 # ===============================
 def mi_login(request):
+    """Vista de login con validación de aprobación"""
+    
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
+        
         if form.is_valid():
             user = form.get_user()
+            
+            # ============ VALIDACIÓN DE APROBACIÓN ============
+            try:
+                perfil = user.perfil
+                
+                # Verificar si el perfil está aprobado
+                if not perfil.aprobado:
+                    logger.warning(
+                        f"⚠️ Intento de login de usuario no aprobado - "
+                        f"Usuario: {user.username} | IP: {request.META.get('REMOTE_ADDR')}"
+                    )
+                    messages.error(
+                        request,
+                        "Tu cuenta está pendiente de aprobación por un administrador. "
+                        "Por favor, espera a que tu cuenta sea activada."
+                    )
+                    return redirect("accounts:login")
+                
+            except Perfil.DoesNotExist:
+                logger.error(
+                    f"❌ Usuario sin perfil intentó iniciar sesión - Usuario: {user.username}"
+                )
+                messages.error(
+                    request,
+                    "Tu cuenta tiene un problema. Contacta al administrador."
+                )
+                return redirect("accounts:login")
+            
+            # Si llegamos aquí, el usuario está aprobado
             login(request, user)
-            logger.info(f"✅ Login exitoso - Usuario: {user.username} | IP: {request.META.get('REMOTE_ADDR')}")
+            logger.info(
+                f"✅ Login exitoso - Usuario: {user.username} | IP: {request.META.get('REMOTE_ADDR')}"
+            )
+            messages.success(request, f"¡Bienvenido, {user.username}!")
             return redirect("accounts:home")
         else:
             username = request.POST.get('username', 'desconocido')
-            logger.warning(f"❌ Login fallido - Usuario: {username} | IP: {request.META.get('REMOTE_ADDR')}")
+            logger.warning(
+                f"❌ Login fallido (credenciales incorrectas) - "
+                f"Usuario: {username} | IP: {request.META.get('REMOTE_ADDR')}"
+            )
+            messages.error(request, "Usuario o contraseña incorrectos.")
     else:
         form = AuthenticationForm()
+    
     return render(request, "login.html", {"form": form})
-
 
 @login_required
 def mi_logout(request):

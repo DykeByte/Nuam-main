@@ -95,18 +95,16 @@ WSGI_APPLICATION = 'nuam.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 from decouple import config
-import dj_database_url
 
-# SECRET_KEY y DEBUG desde .env
-SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=False, cast=bool)
-
-# Configuración de la DB
 DATABASES = {
-    'default': dj_database_url.parse(
-        config('DATABASE_URL'),  # lee DATABASE_URL desde .env
-        conn_max_age=600
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DATABASE_NAME'),  # Leemos DATABASE_NAME del .env
+        'USER': config('DATABASE_USER'),  # Leemos DATABASE_USER del .env
+        'PASSWORD': config('DATABASE_PASSWORD'),  # Leemos DATABASE_PASSWORD del .env
+        'HOST': config('DATABASE_HOST'),  # Leemos DATABASE_HOST del .env
+        'PORT': config('DATABASE_PORT'),  # Leemos DATABASE_PORT del .env
+    }
 }
 
 # ============================================
