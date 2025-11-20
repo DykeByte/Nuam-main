@@ -1,36 +1,128 @@
+# accounts/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, Http404
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import User
 from django.forms import ModelForm
-
-#from api import procesar_carga_masiva, generar_plantilla_excel
-from api.forms import CargaMasivaForm
-from api.models import CalificacionTributaria
+from accounts.models import Perfil
+import re
 import logging
 
+from api.forms import CargaMasivaForm
+from api.models import CalificacionTributaria
+
 logger = logging.getLogger(__name__)
+
+
+# ===============================
+# Vista de Registro CORREGIDA
+# ===============================
+def registro(request):
+    """Vista de registro con validación completa"""
+    
+    if request.method == "POST":
+        # Obtener datos del formulario
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        password2 = request.POST.get('password2', '')
+        
+        logger.info(f"📝 Intento de registro - Username: {username}, Email: {email}")
+        
+        # Lista de errores
+        errors = []
+        
+        # ============ VALIDACIONES ============
+        
+        # 1. Validar username
+        if not username:
+            errors.append("El nombre de usuario es obligatorio")
+        elif len(username) < 3:
+            errors.append("El nombre de usuario debe tener al menos 3 caracteres")
+        elif not re.match(r'^[a-zA-Z][a-zA-Z0-9_]*$', username):
+            errors.append("El nombre de usuario debe comenzar con letra y solo contener letras, números y guiones bajos")
+        elif User.objects.filter(username=username).exists():
+            errors.append("Este nombre de usuario ya está en uso")
+        
+        # 2. Validar email
+        if not email:
+            errors.append("El correo electrónico es obligatorio")
+        elif not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            errors.append("Ingresa un correo electrónico válido")
+        elif User.objects.filter(email=email).exists():
+            errors.append("Este correo electrónico ya está registrado")
+        
+        # 3. Validar contraseña
+        if not password:
+            errors.append("La contraseña es obligatoria")
+        elif len(password) < 8:
+            errors.append("La contraseña debe tener al menos 8 caracteres")
+        elif not re.search(r'[A-Z]', password):
+            errors.append("La contraseña debe contener al menos una letra mayúscula")
+        elif not re.search(r'[a-z]', password):
+            errors.append("La contraseña debe contener al menos una letra minúscula")
+        elif not re.search(r'\d', password):
+            errors.append("La contraseña debe contener al menos un número")
+        elif not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            errors.append("La contraseña debe contener al menos un carácter especial")
+        
+        # 4. Validar confirmación
+        if password != password2:
+            errors.append("Las contraseñas no coinciden")
+        
+        # ============ SI HAY ERRORES ============
+        if errors:
+            logger.warning(f"❌ Registro fallido - Errores: {errors}")
+            for error in errors:
+                messages.error(request, error)
+            return render(request, "accounts/registro.html")
+        
+        # ============ CREAR USUARIO ============
+        try:
+            # Crear el usuario
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password
+            )
+            
+            logger.info(f"✅ Usuario creado en BD: {user.username} (ID: {user.id})")
+            
+            # Verificar que se creó el perfil automáticamente
+            try:
+                perfil = user.perfil
+                logger.info(f"✅ Perfil creado automáticamente: ID={perfil.id}, aprobado={perfil.aprobado}")
+            except Perfil.DoesNotExist:
+                # Si no existe, crearlo manualmente
+                logger.warning(f"⚠️ Perfil no creado automáticamente - Creando manualmente...")
+                perfil = Perfil.objects.create(user=user, aprobado=False)
+                logger.info(f"✅ Perfil creado manualmente: ID={perfil.id}")
+            
+            messages.success(
+                request,
+                "¡Cuenta creada correctamente! Tu cuenta será revisada por un administrador antes de ser activada."
+            )
+            logger.info(f"✅ Registro completado exitosamente para: {username}")
+            
+            return redirect("accounts:login")
+            
+        except Exception as e:
+            logger.error(f"❌ ERROR al crear usuario: {str(e)}", exc_info=True)
+            messages.error(request, f"Error al crear la cuenta. Por favor, intenta de nuevo.")
+            return render(request, "accounts/registro.html")
+    
+    else:
+        # GET - Mostrar formulario vacío
+        logger.debug("📄 Mostrando formulario de registro (GET)")
+        return render(request, "accounts/registro.html")
+
 
 # ===============================
 # Vistas de Autenticación Web
 # ===============================
-def registro(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            logger.info(f"✅ Nuevo usuario registrado: {user.username}")
-            messages.success(request, "Cuenta creada correctamente. Ya puedes iniciar sesión.")
-            return redirect("accounts:login")
-        else:
-            logger.warning(f"❌ Intento de registro fallido. Errores: {form.errors}")
-    else:
-        form = UserCreationForm()
-    return render(request, "accounts/registro.html", {"form": form})
-
-
 def mi_login(request):
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
@@ -117,7 +209,7 @@ def nueva_carga(request):
             try:
                 logger.info(f"🔄 Iniciando procesamiento con ExcelHandler...")
                 handler = ExcelHandler(archivo, tipo_carga, request.user)
-                handler.mercado = mercado  # ← Asignar mercado
+                handler.mercado = mercado
                 
                 logger.info(f"🔄 Ejecutando handler.procesar()...")
                 carga = handler.procesar()
@@ -152,6 +244,7 @@ def nueva_carga(request):
     logger.info(f"{'='*60}")
     return render(request, "accounts/nueva_carga.html", {"form": form})
 
+
 @login_required
 def detalle_carga(request, pk):
     from api.models import CargaMasiva
@@ -160,8 +253,6 @@ def detalle_carga(request, pk):
     
     try:
         carga = get_object_or_404(CargaMasiva, pk=pk, iniciado_por=request.user)
-        
-        # CAMBIO AQUÍ: carga_masiva en vez de carga
         calificaciones = CalificacionTributaria.objects.filter(carga_masiva=carga)
         
         logger.info(f"✅ Carga encontrada: {carga}")
@@ -179,6 +270,8 @@ def detalle_carga(request, pk):
 
 @login_required
 def descargar_plantilla(request):
+    from api import generar_plantilla_excel
+    
     logger.info(f"📥 Descarga de plantilla - Usuario: {request.user.username}")
     
     try:

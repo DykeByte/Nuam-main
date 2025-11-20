@@ -13,11 +13,24 @@ class Perfil(models.Model):
 
     def __str__(self):
         return f"Perfil de {self.user.username}"
+    
+    class Meta:
+        verbose_name = 'Perfil'
+        verbose_name_plural = 'Perfiles'
 
 
 @receiver(post_save, sender=User)
 def crear_o_actualizar_perfil(sender, instance, created, **kwargs):
+    """
+    Señal que crea automáticamente un Perfil cuando se crea un User
+    """
     if created:
+        # Usuario nuevo: crear perfil
         Perfil.objects.create(user=instance)
     else:
-        instance.perfil.save()
+        # Usuario existente: actualizar perfil solo si existe
+        try:
+            instance.perfil.save()
+        except Perfil.DoesNotExist:
+            # Si por alguna razón no existe el perfil, crearlo
+            Perfil.objects.create(user=instance)
