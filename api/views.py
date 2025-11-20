@@ -19,6 +19,7 @@ from django.utils.decorators import method_decorator
 from kafka_app.producers import calificacion_producer
 # from api.utils import obtener_estadisticas_dashboard
 
+
 from api.currency_converter import CurrencyConverter, convert_currency
 
 import logging

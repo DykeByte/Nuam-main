@@ -192,8 +192,25 @@ def mi_logout(request):
 # ===============================
 @login_required
 def home(request):
+    """Dashboard con estadísticas y widget de conversión"""
+    from api.models import CargaMasiva
+    
     logger.debug(f"🏠 Acceso a home - Usuario: {request.user.username}")
-    return render(request, "home.html")
+    
+    # Obtener estadísticas
+    total_calificaciones = CalificacionTributaria.objects.filter(usuario=request.user).count()
+    total_cargas = CargaMasiva.objects.filter(iniciado_por=request.user).count()
+    ultimas_cargas = CargaMasiva.objects.filter(iniciado_por=request.user).order_by('-fecha_inicio')[:3]
+    
+    context = {
+        'total_calificaciones': total_calificaciones,
+        'total_cargas': total_cargas,
+        'ultimas_cargas': ultimas_cargas,
+    }
+    
+    logger.debug(f"   Calificaciones: {total_calificaciones}, Cargas: {total_cargas}")
+    
+    return render(request, "home.html", context)
 
 
 # ===============================
@@ -220,7 +237,8 @@ def lista_cargas(request):
 
 @login_required
 def nueva_carga(request):
-    from api.excel_handler import ExcelHandler 
+    """Vista para crear nueva carga masiva con información de columnas"""
+    from api.excel_handler import ExcelHandler, get_columnas_esperadas
     
     logger.info(f"{'='*60}")
     logger.info(f"🔵 INICIO nueva_carga() - Usuario: {request.user.username}")
@@ -280,8 +298,18 @@ def nueva_carga(request):
         form = CargaMasivaForm()
         logger.info(f"📋 Mostrando formulario vacío")
 
+    # Obtener columnas esperadas según tipo de carga
+    columnas_basicas = get_columnas_esperadas('MONITOR')
+    columnas_factores = get_columnas_esperadas('FACTORES')
+    
+    context = {
+        'form': form,
+        'columnas_basicas': columnas_basicas,
+        'columnas_factores': columnas_factores,
+    }
+
     logger.info(f"{'='*60}")
-    return render(request, "accounts/nueva_carga.html", {"form": form})
+    return render(request, "accounts/nueva_carga.html", context)
 
 
 @login_required
@@ -309,25 +337,220 @@ def detalle_carga(request, pk):
 
 @login_required
 def descargar_plantilla(request):
-    from api import generar_plantilla_excel
-    
+    """Genera y descarga una plantilla Excel con dos hojas: Datos y Factores"""
     logger.info(f"📥 Descarga de plantilla - Usuario: {request.user.username}")
     
     try:
-        archivo = generar_plantilla_excel()
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from io import BytesIO
+        
+        # Crear workbook
+        wb = openpyxl.Workbook()
+        
+        # ============================================
+        # HOJA 1: DATOS PRINCIPALES
+        # ============================================
+        ws1 = wb.active
+        ws1.title = "Datos Principales"
+        
+        # Headers principales
+        headers_principales = [
+            'corredor_dueno',
+            'rut_es_el_manual',
+            'ano_comercial',
+            'mercado',
+            'instrumento',
+            'fecha_pago',
+            'secuencia_evento',
+            'numero_dividendo',
+            'descripcion',
+            'tipo_sociedad',
+            'divisa',
+            'acopio_lsfxf',
+            'valor_historico',
+            'origen',
+            'es_local'
+        ]
+        
+        # Estilo para headers
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_font = Font(color="FFFFFF", bold=True, size=11)
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        # Escribir headers
+        for col, header in enumerate(headers_principales, 1):
+            cell = ws1.cell(row=1, column=col)
+            cell.value = header
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+        
+        # Datos de ejemplo
+        ejemplo_principales = [
+            'Corredor ABC',           # corredor_dueno
+            '12345678-9',             # rut_es_el_manual
+            '2025',                   # ano_comercial
+            'LOCAL',                  # mercado
+            'BONOS-2025',             # instrumento
+            '2025-12-31',             # fecha_pago
+            '1',                      # secuencia_evento
+            '1',                      # numero_dividendo
+            'Ejemplo de calificación', # descripcion
+            'SA',                     # tipo_sociedad
+            'CLP',                    # divisa
+            'FALSE',                  # acopio_lsfxf
+            '1500000.00',             # valor_historico
+            'Manual',                 # origen
+            'TRUE'                    # es_local
+        ]
+        
+        for col, valor in enumerate(ejemplo_principales, 1):
+            ws1.cell(row=2, column=col, value=valor)
+        
+        # Ajustar ancho de columnas
+        for col in ws1.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = min(max_length + 3, 20)  # Máximo 20
+            ws1.column_dimensions[column].width = adjusted_width
+        
+        # ============================================
+        # HOJA 2: FACTORES
+        # ============================================
+        ws2 = wb.create_sheet(title="Factores")
+        
+        # Headers de factores
+        ws2.cell(row=1, column=1, value="ID_Registro")
+        ws2.cell(row=1, column=1).fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        ws2.cell(row=1, column=1).font = header_font
+        ws2.cell(row=1, column=1).alignment = header_alignment
+        
+        # Headers de factores 8-37
+        for i in range(8, 38):
+            col_num = i - 7 + 1  # Columna 2 para factor_8, 3 para factor_9, etc.
+            cell = ws2.cell(row=1, column=col_num)
+            cell.value = f'factor_{i}'
+            cell.fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+            cell.font = header_font
+            cell.alignment = header_alignment
+        
+        # Ejemplo de datos de factores
+        ws2.cell(row=2, column=1, value="1")  # ID_Registro (debe coincidir con la fila de Datos Principales)
+        
+        # Factores de ejemplo (puedes poner valores o dejarlos vacíos)
+        factores_ejemplo = [
+            '1.05',   # factor_8
+            '1.03',   # factor_9
+            '0.98',   # factor_10
+            '1.00',   # factor_11
+            '1.02',   # factor_12
+            '0.99',   # factor_13
+            '1.01',   # factor_14
+            '1.04',   # factor_15
+            '',       # factor_16
+            '',       # factor_17
+            '',       # factor_18
+            '',       # factor_19
+            '',       # factor_20
+            '',       # factor_21
+            '',       # factor_22
+            '',       # factor_23
+            '',       # factor_24
+            '',       # factor_25
+            '',       # factor_26
+            '',       # factor_27
+            '',       # factor_28
+            '',       # factor_29
+            '',       # factor_30
+            '',       # factor_31
+            '',       # factor_32
+            '',       # factor_33
+            '',       # factor_34
+            '',       # factor_35
+            '',       # factor_36
+            ''        # factor_37
+        ]
+        
+        for col_num, valor in enumerate(factores_ejemplo, 2):  # Empieza en columna 2
+            ws2.cell(row=2, column=col_num, value=valor)
+        
+        # Ajustar ancho de columnas de factores
+        ws2.column_dimensions['A'].width = 15
+        for i in range(2, 33):  # Columnas B a AF (factores)
+            ws2.column_dimensions[openpyxl.utils.get_column_letter(i)].width = 12
+        
+        # ============================================
+        # HOJA 3: INSTRUCCIONES
+        # ============================================
+        ws3 = wb.create_sheet(title="Instrucciones")
+        
+        # Título
+        ws3.cell(row=1, column=1, value="INSTRUCCIONES DE USO")
+        ws3.cell(row=1, column=1).font = Font(bold=True, size=14, color="4472C4")
+        
+        instrucciones = [
+            "",
+            "HOJA 'Datos Principales':",
+            "- Contiene la información básica de cada calificación tributaria",
+            "- Llene una fila por cada calificación",
+            "- Los campos obligatorios son: corredor_dueno, instrumento, mercado, divisa",
+            "",
+            "HOJA 'Factores':",
+            "- Contiene los factores de actualización (factor_8 hasta factor_37)",
+            "- ID_Registro debe coincidir con el número de fila en 'Datos Principales'",
+            "- Los factores son opcionales, deje en blanco si no aplica",
+            "",
+            "FORMATOS:",
+            "- Fechas: YYYY-MM-DD (ejemplo: 2025-12-31)",
+            "- Números decimales: Use punto como separador (ejemplo: 1500000.00)",
+            "- Booleanos: TRUE o FALSE",
+            "",
+            "DIVISAS SOPORTADAS:",
+            "USD, CLP, EUR, COP, PEN, MXN, BRL, ARS",
+            "",
+            "MERCADOS:",
+            "- LOCAL",
+            "- INTERNACIONAL",
+            "",
+            "NOTAS:",
+            "- No modifique los nombres de las columnas",
+            "- No elimine las hojas de la plantilla",
+            "- Guarde el archivo en formato .xlsx"
+        ]
+        
+        for row_num, texto in enumerate(instrucciones, 2):
+            cell = ws3.cell(row=row_num, column=1)
+            cell.value = texto
+            if texto.startswith("HOJA") or texto.startswith("FORMATOS") or texto.startswith("DIVISAS") or texto.startswith("MERCADOS") or texto.startswith("NOTAS"):
+                cell.font = Font(bold=True, size=11, color="4472C4")
+        
+        ws3.column_dimensions['A'].width = 80
+        
+        # Guardar en BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
         response = HttpResponse(
-            archivo,
+            output.read(),
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        response["Content-Disposition"] = "attachment; filename=plantilla_carga.xlsx"
-        logger.info(f"✅ Plantilla generada correctamente")
+        response["Content-Disposition"] = "attachment; filename=plantilla_carga_nuam_completa.xlsx"
+        
+        logger.info(f"✅ Plantilla completa generada correctamente (3 hojas)")
         return response
         
     except Exception as e:
         logger.error(f"❌ Error generando plantilla: {str(e)}", exc_info=True)
         messages.error(request, f"Error al generar plantilla: {str(e)}")
         return redirect("accounts:nueva_carga")
-
 
 # ===============================
 # Calificaciones

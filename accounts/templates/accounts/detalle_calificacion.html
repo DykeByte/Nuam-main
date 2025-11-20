@@ -1,9 +1,7 @@
 <!-- ============================================ -->
-<!-- 6. detalle_calificacion.html -->
-<!-- Guardar en: accounts/templates/accounts/detalle_calificacion.html -->
+<!-- detalle_calificacion.html - VERSIÓN CORREGIDA -->
 <!-- ============================================ -->
 {% extends 'base.html' %}
-{% load custom_filters %}
 
 {% block title %}Detalle Calificación - NUAM{% endblock %}
 
@@ -57,7 +55,7 @@
                 </tr>
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding: 0.75rem; font-weight: 600;">Valor Histórico:</td>
-                    <td style="padding: 0.75rem;">${{ calificacion.valor_historico|default:"0" }}</td>
+                    <td style="padding: 0.75rem;">${{ calificacion.valor_historico|floatformat:2|default:"0.00" }}</td>
                 </tr>
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding: 0.75rem; font-weight: 600;">Es Local:</td>
@@ -68,20 +66,140 @@
     </div>
     
     <div style="margin-top: 2rem;">
-        <h3 style="color: #667eea; margin-bottom: 1rem;">Factores</h3>
+        <h3 style="color: #667eea; margin-bottom: 1rem;">Factores de Actualización</h3>
         <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;">
-            {% for i in "012345678901234567890123456789" %}
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
-                    <div style="font-weight: 600; color: #667eea;">Factor {{ i|add:"8" }}</div>
-                    <div style="margin-top: 0.5rem;">
-                        {% with factor_name="factor_"|add:i|add:"8" %}
-                            {{ calificacion|attr:factor_name|default:"N/A" }}
-                        {% endwith %}
-                    </div>
-                </div>
-            {% endfor %}
+            <!-- Factores 8-12 -->
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 8</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_8|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 9</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_9|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 10</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_10|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 11</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_11|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 12</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_12|floatformat:6|default:"N/A" }}</div>
+            </div>
+            
+            <!-- Factores 13-17 -->
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 13</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_13|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 14</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_14|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 15</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_15|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 16</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_16|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 17</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_17|floatformat:6|default:"N/A" }}</div>
+            </div>
+            
+            <!-- Factores 18-22 -->
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 18</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_18|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 19</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_19|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 20</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_20|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 21</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_21|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 22</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_22|floatformat:6|default:"N/A" }}</div>
+            </div>
+            
+            <!-- Factores 23-27 -->
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 23</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_23|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 24</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_24|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 25</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_25|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 26</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_26|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 27</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_27|floatformat:6|default:"N/A" }}</div>
+            </div>
+            
+            <!-- Factores 28-32 -->
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 28</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_28|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 29</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_29|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 30</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_30|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 31</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_31|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 32</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_32|floatformat:6|default:"N/A" }}</div>
+            </div>
+            
+            <!-- Factores 33-37 -->
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 33</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_33|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 34</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_34|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 35</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_35|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 36</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_36|floatformat:6|default:"N/A" }}</div>
+            </div>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; text-align: center;">
+                <div style="font-weight: 600; color: #667eea;">Factor 37</div>
+                <div style="margin-top: 0.5rem; font-size: 1.1rem;">{{ calificacion.factor_37|floatformat:6|default:"N/A" }}</div>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
-

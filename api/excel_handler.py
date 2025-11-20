@@ -10,6 +10,7 @@ from api.kafka_producer import (
 )
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,14 +38,30 @@ class ExcelHandler:
         carga = None
         
         try:
-            # Leer el archivo Excel
-            logger.info("📖 Leyendo archivo Excel...")
-            df = pd.read_excel(self.archivo)
-            logger.info(f"✅ Archivo leído: {len(df)} filas, {len(df.columns)} columnas")
-            logger.info(f"   Columnas encontradas: {list(df.columns)}")
+            # Leer el archivo Excel - HOJA 1: Datos Principales
+            logger.info("📖 Leyendo archivo Excel (Hoja 1: Datos Principales)...")
+            df_principales = pd.read_excel(self.archivo, sheet_name='Datos Principales')
+            logger.info(f"✅ Hoja 1 leída: {len(df_principales)} filas, {len(df_principales.columns)} columnas")
+            logger.info(f"   Columnas encontradas: {list(df_principales.columns)}")
             
             # Limpiar nombres de columnas (quitar espacios)
-            df.columns = df.columns.str.strip()
+            df_principales.columns = df_principales.columns.str.strip()
+            
+            # Leer HOJA 2: Factores (si existe)
+            df_factores = None
+            try:
+                logger.info("📖 Leyendo Hoja 2: Factores...")
+                df_factores = pd.read_excel(self.archivo, sheet_name='Factores')
+                df_factores.columns = df_factores.columns.str.strip()
+                logger.info(f"✅ Hoja 2 leída: {len(df_factores)} filas, {len(df_factores.columns)} columnas")
+                
+                # Convertir ID_Registro a índice para fácil acceso
+                if 'ID_Registro' in df_factores.columns:
+                    df_factores = df_factores.set_index('ID_Registro')
+                    logger.info(f"✅ Factores indexados por ID_Registro")
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudo leer hoja de factores: {str(e)}")
+                df_factores = None
             
             # Crear el registro de carga masiva
             logger.info("💾 Creando registro de CargaMasiva...")
@@ -54,7 +71,7 @@ class ExcelHandler:
                 mercado=self.mercado or 'LOCAL',
                 archivo_nombre=self.archivo.name,
                 archivo_path='',
-                registros_procesados=len(df),
+                registros_procesados=len(df_principales),
                 estado='PROCESANDO'
             )
             logger.info(f"✅ CargaMasiva creada con ID: {carga.id}")
@@ -67,10 +84,18 @@ class ExcelHandler:
                 logger.warning(f"⚠️ No se pudo publicar evento en Kafka: {str(e)}")
             
             # Procesar cada fila
-            logger.info(f"🔄 Procesando {len(df)} filas...")
-            for index, row in df.iterrows():
+            logger.info(f"🔄 Procesando {len(df_principales)} filas...")
+            for index, row in df_principales.iterrows():
                 try:
-                    calificacion = self._procesar_fila(row, carga, index + 2)
+                    # Obtener factores correspondientes si existen
+                    row_factores = None
+                    if df_factores is not None:
+                        id_registro = index + 1  # ID_Registro empieza en 1
+                        if id_registro in df_factores.index:
+                            row_factores = df_factores.loc[id_registro]
+                            logger.debug(f"   Factores encontrados para registro {id_registro}")
+                    
+                    calificacion = self._procesar_fila(row, carga, index + 2, row_factores)
                     self.registros_exitosos += 1
                     
                     # 🆕 PUBLICAR EVENTO KAFKA: Calificación creada
@@ -80,7 +105,7 @@ class ExcelHandler:
                         logger.warning(f"⚠️ No se pudo publicar evento de calificación: {str(e)}")
                     
                     if (index + 1) % 10 == 0:
-                        logger.debug(f"   Procesadas {index + 1}/{len(df)} filas...")
+                        logger.debug(f"   Procesadas {index + 1}/{len(df_principales)} filas...")
                         
                 except Exception as e:
                     self.registros_fallidos += 1
@@ -149,7 +174,7 @@ class ExcelHandler:
             
             raise Exception(f"Error al procesar archivo: {str(e)}")
     
-    def _procesar_fila(self, row, carga, num_fila):
+    def _procesar_fila(self, row, carga, num_fila, row_factores=None):
         """Procesa una fila individual del Excel"""
         
         logger.debug(f"   Procesando fila {num_fila}...")
@@ -185,11 +210,19 @@ class ExcelHandler:
         calificacion.acopio_lsfxf = self._get_bool_value(row, 'acopio_lsfxf')
         calificacion.es_local = self._get_bool_value(row, 'es_local', default=True)
         
-        # Procesar factores (del 8 al 37) solo si es tipo FACTORES
-        if self.tipo_carga == 'FACTORES':
+        # Procesar factores (del 8 al 37) desde la hoja de factores
+        if row_factores is not None:
+            logger.debug(f"   Procesando factores desde hoja Factores...")
+            factores_procesados = 0
             for i in range(8, 38):
                 factor_name = f'factor_{i}'
-                setattr(calificacion, factor_name, self._get_decimal_value(row, factor_name))
+                factor_value = self._get_decimal_value(row_factores, factor_name)
+                if factor_value is not None:
+                    setattr(calificacion, factor_name, factor_value)
+                    factores_procesados += 1
+            logger.debug(f"   ✅ {factores_procesados} factores asignados")
+        else:
+            logger.debug(f"   ⚠️ No hay factores para este registro")
         
         # Guardar
         calificacion.save()
@@ -323,3 +356,6 @@ def validar_archivo_excel(archivo, tipo_carga):
         
     except Exception as e:
         return False, f"Error leyendo archivo: {str(e)}", []
+    
+
+

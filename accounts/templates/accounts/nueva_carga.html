@@ -20,104 +20,88 @@
 
         <!-- Tipo de carga -->
         <div style="margin-bottom: 2rem;">
-            {{ form.tipo_carga.label_tag }}
+            <label for="id_tipo_carga" style="display: block; font-weight: 600; color: #333; margin-bottom: 0.5rem; font-size: 1rem;">
+                Tipo de carga:
+            </label>
             {{ form.tipo_carga|add_class:"form-control" }}
             {% if form.tipo_carga.errors %}
-                <div class="text-danger">{{ form.tipo_carga.errors }}</div>
+                <div class="text-danger" style="margin-top: 0.5rem;">{{ form.tipo_carga.errors }}</div>
             {% endif %}
         </div>
 
         <!-- Archivo -->
         <div style="margin-bottom: 2rem;">
-            {{ form.archivo.label_tag }}
-            <div style="border: 2px dashed #667eea; border-radius: 10px; padding: 3rem; text-align: center; background: #f8f9fa;">
+            <label style="display: block; font-weight: 600; color: #333; margin-bottom: 0.75rem; font-size: 1rem;">
+                Archivo Excel/CSV:
+            </label>
+            <div style="border: 2px dashed #667eea; border-radius: 10px; padding: 2.5rem 2rem; text-align: center; background: #f8f9fa; transition: all 0.3s ease;">
                 
-                {{ form.archivo|add_class:"form-control" }}
-                <label for="id_archivo" style="cursor: pointer;">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
-                    <p style="color: #667eea; font-weight: 600; margin-bottom: 0.5rem;">
+                <input type="file" id="id_archivo" name="archivo" accept=".xlsx,.xls" style="display: none;" required>
+                
+                <label for="id_archivo" style="cursor: pointer; display: block;">
+                    <div style="font-size: 3.5rem; margin-bottom: 1rem;">📁</div>
+                    <p style="color: #667eea; font-weight: 600; margin-bottom: 0.5rem; font-size: 1.1rem;">
                         Haz click para seleccionar archivo
                     </p>
-                    <p style="color: #999; font-size: 0.9rem;">
-                        Formatos aceptados: .xlsx, .xls (Máximo 5MB)
+                    <p style="color: #6c757d; font-size: 0.9rem; margin: 0;">
+                        Formatos aceptados: <strong>.xlsx</strong>, <strong>.xls</strong> (Máximo 5MB)
                     </p>
                 </label>
 
-                <div id="fileName" style="margin-top: 1rem; color: #28a745; font-weight: 600;"></div>
+                <div id="fileName" style="margin-top: 1.5rem; padding: 0.75rem; border-radius: 5px; display: none;"></div>
             </div>
 
             {% if form.archivo.errors %}
-                <div class="text-danger">{{ form.archivo.errors }}</div>
+                <div class="text-danger" style="margin-top: 0.75rem; padding: 0.5rem; background: #f8d7da; border-radius: 5px;">
+                    {{ form.archivo.errors }}
+                </div>
             {% endif %}
         </div>
 
         <!-- Mercado -->
         <div style="margin-bottom: 2rem;">
-            {{ form.mercado.label_tag }}
+            <label for="id_mercado" style="display: block; font-weight: 600; color: #333; margin-bottom: 0.5rem; font-size: 1rem;">
+                Mercado:
+            </label>
             {{ form.mercado|add_class:"form-control" }}
             {% if form.mercado.errors %}
-                <div class="text-danger">{{ form.mercado.errors }}</div>
+                <div class="text-danger" style="margin-top: 0.5rem;">{{ form.mercado.errors }}</div>
             {% endif %}
         </div>
 
-        <!-- Info columnas requeridas -->
+        <!-- Info sobre estructura del archivo Excel -->
         <div style="background: #d1ecf1; padding: 1.5rem; border-radius: 5px; border-left: 4px solid #17a2b8; margin-bottom: 2rem;">
-            <h3 style="color: #0c5460; margin-bottom: 1rem;">ℹ️ Columnas Requeridas</h3>
-            <div id="columnasInfo" style="display: none;">
+            <h3 style="color: #0c5460; margin-bottom: 1rem;">ℹ️ Estructura del Archivo Excel</h3>
+            
+            <div style="color: #0c5460;">
+                <p style="margin-bottom: 1rem;">
+                    <strong>Tu archivo Excel debe contener:</strong>
+                </p>
+                
+                <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
+                    <li><strong>Una fila de encabezado</strong> con los nombres exactos de las columnas</li>
+                    <li><strong>Columnas básicas obligatorias:</strong> corredor_dueno, rut, ano_comercial, mercado, instrumento, fecha_pago, secuencia_evento, numero_dividendo, descripcion, tipo_sociedad, acopio_lsfxf, valor_historico, factor_actualizacion, es_local</li>
+                    <li id="columnasExtras" style="display: none;"><strong>Para tipo FACTORES:</strong> Además incluye columnas factor_8 hasta factor_37 (30 columnas adicionales)</li>
+                </ul>
 
-                <div id="columnasFactores" style="display: none;">
-                    <h4 style="color: #0c5460; margin-bottom: 0.5rem;">Tipo FACTORES:</h4>
-                    <ul style="color: #0c5460; padding-left: 1.5rem; columns: 2;">
-                        <li>corredor_dueno</li>
-                        <li>rut</li>
-                        <li>ano_comercial</li>
-                        <li>mercado</li>
-                        <li>instrumento</li>
-                        <li>fecha_pago</li>
-                        <li>secuencia_evento</li>
-                        <li>numero_dividendo</li>
-                        <li>descripcion</li>
-                        <li>tipo_sociedad</li>
-                        <li>acopio_lsfxf</li>
-                        <li>valor_historico</li>
-                        <li>factor_actualizacion</li>
-                        <li>es_local</li>
-                        <li>factor_8 a factor_37 (30 columnas)</li>
-                    </ul>
+                <div style="background: white; padding: 1rem; border-radius: 5px; margin-top: 1rem;">
+                    <p style="margin: 0; font-size: 0.95rem;">
+                        💡 <strong>Tip:</strong> Descarga la plantilla de ejemplo más abajo para asegurarte de que tu archivo tenga la estructura correcta.
+                    </p>
                 </div>
-
-                <div id="columnasMonitor" style="display: none;">
-                    <h4 style="color: #0c5460; margin-bottom: 0.5rem;">Tipo MONITOR:</h4>
-                    <ul style="color: #0c5460; padding-left: 1.5rem; columns: 2;">
-                        <li>corredor_dueno</li>
-                        <li>rut</li>
-                        <li>ano_comercial</li>
-                        <li>mercado</li>
-                        <li>instrumento</li>
-                        <li>fecha_pago</li>
-                        <li>secuencia_evento</li>
-                        <li>numero_dividendo</li>
-                        <li>descripcion</li>
-                        <li>tipo_sociedad</li>
-                        <li>acopio_lsfxf</li>
-                        <li>valor_historico</li>
-                        <li>factor_actualizacion</li>
-                        <li>es_local</li>
-                    </ul>
-                </div>
-
             </div>
         </div>
 
         <!-- Recomendaciones -->
         <div style="background: #fff3cd; padding: 1.5rem; border-radius: 5px; border-left: 4px solid #ffc107; margin-bottom: 2rem;">
-            <h3 style="color: #856404; margin-bottom: 0.5rem;">⚠️ Recomendaciones</h3>
-            <ul style="color: #856404; padding-left: 1.5rem;">
-                <li>Usa encabezado con nombres exactos de las columnas</li>
-                <li>Formato fecha: YYYY-MM-DD</li>
-                <li>Booleanos: true/false, 1/0, sí/no</li>
-                <li>Decimales con punto o coma</li>
-                <li>Máximo 100 registros para pruebas</li>
+            <h3 style="color: #856404; margin-bottom: 1rem;">⚠️ Recomendaciones Importantes</h3>
+            <ul style="color: #856404; padding-left: 1.5rem; margin: 0;">
+                <li><strong>Encabezados:</strong> Usa los nombres exactos de las columnas (respeta mayúsculas/minúsculas y guiones bajos)</li>
+                <li><strong>Fechas:</strong> Formato YYYY-MM-DD (ejemplo: 2024-03-15)</li>
+                <li><strong>Valores booleanos:</strong> Usa true/false, 1/0, sí/no, o vacío</li>
+                <li><strong>Decimales:</strong> Puedes usar punto (.) o coma (,) como separador</li>
+                <li><strong>Valores vacíos:</strong> Deja la celda en blanco si no tienes el dato</li>
+                <li><strong>Para pruebas:</strong> Se recomienda máximo 100 registros</li>
             </ul>
         </div>
 
@@ -127,44 +111,68 @@
         </div>
     </form>
 
-    <div style="margin-top: 2rem; padding: 1.5rem; background: #e7f3ff; border-radius: 5px; text-align: center;">
-        <p style="color: #004085; margin-bottom: 1rem;">
-            <strong>¿Primera vez?</strong> Descarga la plantilla de ejemplo
+    <!-- Sección de plantilla -->
+    <div style="margin-top: 2rem; padding: 1.5rem; background: #e7f3ff; border-radius: 5px; text-align: center; border: 2px solid #667eea;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+        <p style="color: #004085; margin-bottom: 1rem; font-size: 1.1rem;">
+            <strong>¿Primera vez o tienes dudas?</strong>
         </p>
-        <a href="{% url 'accounts:descargar_plantilla' %}" class="btn btn-primary" style="text-decoration: none;">
+        <p style="color: #004085; margin-bottom: 1.5rem;">
+            Descarga la plantilla de ejemplo con la estructura correcta y columnas necesarias
+        </p>
+        <a href="{% url 'accounts:descargar_plantilla' %}" class="btn btn-primary" style="text-decoration: none; font-size: 1rem; padding: 0.75rem 2rem;">
             📥 Descargar Plantilla Excel
         </a>
     </div>
 </div>
 
 <script>
+// Mostrar nombre y tamaño del archivo seleccionado
 document.getElementById('id_archivo').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name;
-    const fileSize = e.target.files[0]?.size;
+    const file = e.target.files[0];
     const fileNameDiv = document.getElementById('fileName');
 
-    if (fileName) {
-        const sizeMB = (fileSize / (1024 * 1024)).toFixed(2);
-        fileNameDiv.innerHTML = `✓ Archivo seleccionado: <strong>${fileName}</strong><br>Tamaño: ${sizeMB} MB`;
+    if (file) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const sizeColor = sizeMB > 5 ? '#dc3545' : '#28a745';
+        
+        fileNameDiv.style.display = 'block';
+        fileNameDiv.style.background = sizeMB > 5 ? '#f8d7da' : '#d4edda';
+        fileNameDiv.style.color = sizeColor;
+        fileNameDiv.style.borderLeft = `4px solid ${sizeColor}`;
+        
+        fileNameDiv.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <span style="font-size: 1.5rem;">${sizeMB > 5 ? '⚠️' : '✓'}</span>
+                <div style="text-align: left;">
+                    <div style="font-weight: 600;">${file.name}</div>
+                    <div style="font-size: 0.9rem;">Tamaño: ${sizeMB} MB ${sizeMB > 5 ? '(Excede el límite de 5MB)' : ''}</div>
+                </div>
+            </div>
+        `;
+    } else {
+        fileNameDiv.style.display = 'none';
+        fileNameDiv.innerHTML = '';
     }
 });
 
+// Mostrar información adicional según el tipo de carga
 document.getElementById('id_tipo_carga').addEventListener('change', function(e) {
     const tipo = e.target.value;
-    const columnasInfo = document.getElementById('columnasInfo');
-    const columnasFactores = document.getElementById('columnasFactores');
-    const columnasMonitor = document.getElementById('columnasMonitor');
+    const columnasExtras = document.getElementById('columnasExtras');
 
     if (tipo === 'FACTORES') {
-        columnasInfo.style.display = 'block';
-        columnasFactores.style.display = 'block';
-        columnasMonitor.style.display = 'none';
-    } else if (tipo === 'MONITOR') {
-        columnasInfo.style.display = 'block';
-        columnasFactores.style.display = 'none';
-        columnasMonitor.style.display = 'block';
+        columnasExtras.style.display = 'list-item';
     } else {
-        columnasInfo.style.display = 'none';
+        columnasExtras.style.display = 'none';
+    }
+});
+
+// Inicializar en caso de que ya haya un valor seleccionado
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('id_tipo_carga');
+    if (tipoSelect.value === 'FACTORES') {
+        document.getElementById('columnasExtras').style.display = 'list-item';
     }
 });
 </script>
