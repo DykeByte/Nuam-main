@@ -577,12 +577,19 @@ def editar_calificacion(request, pk):
     class CalificacionForm(ModelForm):
         class Meta:
             model = CalificacionTributaria
-            fields = "__all__"
+            exclude = ["usuario", "divisa"]  # ← No queremos que se editen
 
     if request.method == "POST":
         form = CalificacionForm(request.POST, instance=calificacion)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+
+            # Campos automáticos NO editables
+            obj.usuario = request.user            # usuario actual
+            obj.divisa = calificacion.divisa      # mantiene la divisa original
+
+            obj.save()
+
             logger.info(f"✏️ Calificación {pk} actualizada por {request.user.username}")
             messages.success(request, "Calificación actualizada correctamente.")
             return redirect("accounts:lista_calificaciones")
@@ -591,7 +598,11 @@ def editar_calificacion(request, pk):
     else:
         form = CalificacionForm(instance=calificacion)
 
-    return render(request, "accounts/editar_calificacion.html", {"form": form, "calificacion": calificacion})
+    return render(
+        request,
+        "accounts/editar_calificacion.html",
+        {"form": form, "calificacion": calificacion}
+    )
 
 
 @login_required
