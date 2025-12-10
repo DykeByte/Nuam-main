@@ -873,21 +873,21 @@ Para reportar bugs o solicitar features, abrir un issue en GitHub.
 
 ## 🎯 **VERSIONES**
 
-### **v2.1.0** (Diciembre 2024) - CURRENT
+### **v2.1.0** (Diciembre 2025) - CURRENT
 - ✅ Sistema avanzado de búsqueda y filtros
 - ✅ Barra de progreso en tiempo real
 - ✅ Reporte detallado de errores con sugerencias
 - ✅ Paginación inteligente (10-100 resultados)
 - ✅ Ordenamiento dinámico por columnas
 
-### **v2.0.0** (Diciembre 2024)
+### **v2.0.0** (Diciembre 2025)
 - ✅ Apache2 dual-layer reverse proxy
 - ✅ Frontend modernizado con glassmorphism
 - ✅ React Dashboard con gráficos interactivos
 - ✅ Currency Service (FastAPI)
 - ✅ Seguridad mejorada (.env, SSL/TLS)
 
-### **v1.0.0** (Noviembre 2024)
+### **v1.0.0** (Noviembre 2025)
 - ✅ Sistema base Django + DRF
 - ✅ Kafka integration
 - ✅ Excel bulk loading
