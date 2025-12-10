@@ -10,6 +10,8 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
 
+from . import views
+
 from api.views import (
     CalificacionTributariaViewSet,
     CargaMasivaViewSet,
@@ -86,7 +88,18 @@ urlpatterns = [
     
     # Health Check
     path('health/', health_check, name='health-check'),
+    path('v1/health/', views.health_check, name='health_check'),
+
+    # Estadísticas del sistema
+    path('v1/stats/', views.system_stats, name='system_stats'),
+
+    # Dashboard completo
+    path('v1/dashboard/', views.dashboard_data, name='dashboard_data'),
     
+    # Proxy para Currency Service (opcional)
+    path('v1/currencies/current/', views.currency_proxy, name='currency_proxy'),
+
+
     # Documentación Swagger/OpenAPI
     path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

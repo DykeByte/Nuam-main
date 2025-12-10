@@ -1,49 +1,261 @@
-<!-- ============================================ -->
-<!-- 2. login.html -->
-<!-- Guardar en: accounts/templates/accounts/login.html -->
-<!-- ============================================ -->
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Login - NUAM{% endblock %}
+{% block title %}Iniciar Sesión - NUAM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 85vh;
+        padding: 2rem 1rem;
+    }
+
+    .login-card {
+        max-width: 480px;
+        width: 100%;
+        animation: scaleUp 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .login-logo {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .login-title {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.5px;
+    }
+
+    .login-subtitle {
+        color: #6c757d;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .form-group {
+        margin-bottom: 1.75rem;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.95rem;
+    }
+
+    .form-icon {
+        font-size: 1.25rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 1rem 1.25rem;
+        border: 2px solid rgba(0, 0, 0, 0.08);
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+        color: #2c3e50;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .form-input::placeholder {
+        color: #adb5bd;
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        letter-spacing: 0.5px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-login::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.7s;
+    }
+
+    .btn-login:hover::before {
+        left: 100%;
+    }
+
+    .btn-login:hover {
+        background: linear-gradient(135deg, #764ba2, #667eea);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-login:active {
+        transform: translateY(-1px);
+    }
+
+    .login-footer {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .login-footer-text {
+        color: #6c757d;
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .login-footer-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 700;
+        transition: all 0.3s;
+        position: relative;
+    }
+
+    .login-footer-link::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        transition: width 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .login-footer-link:hover::after {
+        width: 100%;
+    }
+
+    .login-footer-link:hover {
+        color: #764ba2;
+    }
+
+    /* Security Badge */
+    .security-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 2rem;
+        padding: 1rem;
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        border-radius: 10px;
+        color: #155724;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .security-icon {
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
-    <div class="card" style="max-width: 450px; width: 100%;">
-        <h1 style="text-align: center; color: #667eea; margin-bottom: 2rem;">Iniciar Sesión</h1>
-        
+<div class="login-container">
+    <div class="card login-card">
+        <div class="login-header">
+            <div class="login-logo">🔐</div>
+            <h1 class="login-title">Iniciar Sesión</h1>
+            <p class="login-subtitle">Accede a tu cuenta NUAM</p>
+        </div>
+
         <form method="post">
             {% csrf_token %}
-            
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Usuario</label>
-                <input 
-                    type="text" 
-                    name="username" 
+
+            <div class="form-group">
+                <label class="form-label">
+                    <span class="form-icon">👤</span>
+                    Usuario
+                </label>
+                <input
+                    type="text"
+                    name="username"
+                    class="form-input"
                     required
-                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                    autocomplete="username"
                     placeholder="Ingresa tu usuario"
+                    autofocus
                 >
             </div>
-            
-            <div style="margin-bottom: 2rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contraseña</label>
-                <input 
-                    type="password" 
-                    name="password" 
+
+            <div class="form-group">
+                <label class="form-label">
+                    <span class="form-icon">🔒</span>
+                    Contraseña
+                </label>
+                <input
+                    type="password"
+                    name="password"
+                    class="form-input"
                     required
-                    style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem;"
+                    autocomplete="current-password"
                     placeholder="Ingresa tu contraseña"
                 >
             </div>
-            
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;">
+
+            <button type="submit" class="btn-login">
                 Ingresar
             </button>
         </form>
-        
-        <p style="text-align: center; color: #666;">
-            ¿No tienes cuenta? <a href="{% url 'accounts:registro' %}" style="color: #667eea; text-decoration: none; font-weight: 600;">Regístrate aquí</a>
-        </p>
+
+        <div class="security-badge">
+            <span class="security-icon">🛡️</span>
+            <span>Conexión segura y encriptada</span>
+        </div>
+
+        <div class="login-footer">
+            <p class="login-footer-text">
+                ¿No tienes cuenta?
+            </p>
+            <a href="{% url 'accounts:registro' %}" class="login-footer-link">
+                Regístrate aquí →
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}

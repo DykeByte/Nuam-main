@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import dj_database_url
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +22,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-vdxx7x-a+h#*)5==$7$3o338!)zsu*+m(dqjf!gi=1i!l)-36s'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-change-this')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+# CSRF Trusted Origins (for HTTPS and cross-origin requests)
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost,https://localhost,http://127.0.0.1,https://127.0.0.1'
+).split(',')
 
 LOGIN_REDIRECT_URL = '/'
 
@@ -95,17 +102,20 @@ WSGI_APPLICATION = 'nuam.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 from decouple import config
+import os
+
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DATABASE_NAME'),  # Leemos DATABASE_NAME del .env
-        'USER': config('DATABASE_USER'),  # Leemos DATABASE_USER del .env
-        'PASSWORD': config('DATABASE_PASSWORD'),  # Leemos DATABASE_PASSWORD del .env
-        'HOST': config('DATABASE_HOST'),  # Leemos DATABASE_HOST del .env
-        'PORT': config('DATABASE_PORT'),  # Leemos DATABASE_PORT del .env
+        'NAME': os.getenv('DATABASE_NAME'),
+        'USER': os.getenv('DATABASE_USER'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOST'),
+        'PORT': os.getenv('DATABASE_PORT'),
     }
 }
+
 
 # ============================================
 # CONFIGURACIÓN DE CACHÉ
@@ -181,7 +191,23 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Additional locations of static files
+STATICFILES_DIRS = [
+    BASE_DIR / 'accounts' / 'static',
+]
+
+# Static files finders
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+# Media files (user uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -511,3 +537,12 @@ KAFKA_RETRY_CONFIG = {
 
 # Monitoring
 KAFKA_ENABLE_METRICS = config('KAFKA_ENABLE_METRICS', default=True, cast=bool)
+
+
+# ============================================
+# CURRENCY SERVICE INTEGRATION
+# ============================================
+CURRENCY_SERVICE_URL = os.getenv(
+    'CURRENCY_SERVICE_URL', 
+    'http://currency-service:8001'
+)

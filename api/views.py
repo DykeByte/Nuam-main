@@ -1,7 +1,8 @@
 # api/views.py
 from rest_framework import viewsets, status, filters
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.decorators import api_view, permission_classes, action, authentication_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
@@ -18,9 +19,19 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from kafka_app.producers import calificacion_producer
 # from api.utils import obtener_estadisticas_dashboard
-
-
 from api.currency_converter import CurrencyConverter, convert_currency
+
+from nuam.service_client import (
+    calificaciones_service,
+    conversion_service,
+    dashboard_service,
+    validate_jwt_with_auth_service
+)
+
+from django.contrib.auth.models import User
+from datetime import datetime, timedelta
+from api.models import CargaMasiva
+
 
 import logging
 
@@ -952,6 +963,7 @@ def obtener_todas_tasas(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@authentication_classes([SessionAuthentication])
 def obtener_tasa_ajax(request):
     """
     Endpoint para AJAX sin JWT (usa sesión de Django).
@@ -971,9 +983,9 @@ def obtener_tasa_ajax(request):
         
         return Response({
             'success': True,
-            'from_currency': from_currency.upper(),
-            'to_currency': to_currency.upper(),
-            'rate': str(rate),
+            'from': from_currency.upper(),
+            'to': to_currency.upper(),
+            'rate': float(rate),
             'formatted_rate': f"{rate:,.2f}",
         })
         
@@ -983,3 +995,182 @@ def obtener_tasa_ajax(request):
             'success': False,
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+
+# api/views.py (agregar al final)
+import requests
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def obtener_historico_divisa(request, currency):
+    """
+    Obtiene histórico desde Currency Service
+    """
+    try:
+        response = requests.get(
+            f'http://currency-service:8001/api/v1/rates/history/{currency}',
+            params={'days': 30},
+            timeout=10
+        )
+        response.raise_for_status()
+        return Response(response.json())
+    except Exception as e:
+        logger.error(f"Error consultando currency service: {e}")
+        return Response(
+            {'error': 'Currency service no disponible'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+    
+
+# ==============================================
+# API VIEW
+# ==============================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def system_stats(request):
+    """
+    Endpoint para obtener estadísticas del sistema
+    VERSIÓN SIN LogOperacion
+    """
+    try:
+        # Fecha actual
+        hoy = timezone.now().date()
+        inicio_semana = hoy - timedelta(days=7)
+        inicio_mes = hoy - timedelta(days=30)
+        
+        # Estadísticas de archivos (CargaMasiva)
+        archivos_procesados = CargaMasiva.objects.filter(
+            estado='completado'
+        ).count()
+        archivos_pendientes = CargaMasiva.objects.filter(
+            estado='pendiente'
+        ).count()
+        archivos_con_error = CargaMasiva.objects.filter(
+            estado='error'
+        ).count()
+        
+        # Total de archivos como proxy de operaciones
+        total_operaciones = CargaMasiva.objects.count()
+        operaciones_hoy = CargaMasiva.objects.filter(
+            fecha_creacion__date=hoy
+        ).count()
+        operaciones_semana = CargaMasiva.objects.filter(
+            fecha_creacion__date__gte=inicio_semana
+        ).count()
+        operaciones_mes = CargaMasiva.objects.filter(
+            fecha_creacion__date__gte=inicio_mes
+        ).count()
+        
+        # Estadísticas de usuarios
+        usuarios_activos = User.objects.filter(is_active=True).count()
+        usuarios_registrados = User.objects.count()
+        
+        stats = {
+            # Operaciones (basadas en CargaMasiva)
+            'total_operaciones': total_operaciones,
+            'operaciones_hoy': operaciones_hoy,
+            'operaciones_semana': operaciones_semana,
+            'operaciones_mes': operaciones_mes,
+            
+            # Usuarios
+            'usuarios_activos': usuarios_activos,
+            'usuarios_registrados': usuarios_registrados,
+            
+            # Archivos
+            'archivos_procesados': archivos_procesados,
+            'archivos_pendientes': archivos_pendientes,
+            'archivos_con_error': archivos_con_error,
+            
+            # Timestamp
+            'timestamp': timezone.now().isoformat(),
+        }
+        
+        logger.info(f"📊 Stats solicitadas: {stats}")
+        return Response(stats, status=200)
+        
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo estadísticas: {e}")
+        return Response(
+            {'error': 'Error obteniendo estadísticas del sistema'},
+            status=500
+        )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """Health check endpoint"""
+    try:
+        from nuam.currency_client import currency_service
+        currency_service_ok = currency_service.health_check()
+    except:
+        currency_service_ok = False
+    
+    try:
+        User.objects.count()
+        db_ok = True
+    except:
+        db_ok = False
+    
+    status_code = 200 if (currency_service_ok and db_ok) else 503
+    
+    return Response({
+        'status': 'healthy' if status_code == 200 else 'unhealthy',
+        'database': 'ok' if db_ok else 'error',
+        'currency_service': 'ok' if currency_service_ok else 'error',
+        'timestamp': timezone.now().isoformat()
+    }, status=status_code)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def currency_proxy(request):
+    """Proxy para Currency Service"""
+    try:
+        from nuam.currency_client import currency_service
+        
+        from_currency = request.GET.get('from', 'USD')
+        to_currency = request.GET.get('to', 'CLP')
+        
+        data = currency_service.get_current_rate(from_currency, to_currency)
+        
+        if data:
+            return Response(data, status=200)
+        else:
+            return Response(
+                {'error': 'No se pudo obtener tasa de cambio'},
+                status=503
+            )
+    except Exception as e:
+        logger.error(f"Error en currency_proxy: {e}")
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def dashboard_data(request):
+    """Endpoint completo para el dashboard"""
+    try:
+        from nuam.currency_client import currency_service
+        
+        # Stats del sistema
+        stats_response = system_stats(request)
+        stats = stats_response.data
+        
+        # Datos de monedas
+        currency_summary = currency_service.get_dashboard_summary()
+        
+        return Response({
+            'system_stats': stats,
+            'currency_data': currency_summary,
+            'timestamp': timezone.now().isoformat()
+        }, status=200)
+        
+    except Exception as e:
+        logger.error(f"❌ Error en dashboard_data: {e}")
+        return Response(
+            {'error': 'Error obteniendo datos del dashboard'},
+            status=500
+        )

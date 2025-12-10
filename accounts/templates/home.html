@@ -1,51 +1,215 @@
-<!-- ============================================ -->
-<!-- home.html con Widget de Conversión de Divisas -->
-<!-- ============================================ -->
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Dashboard - NUAM{% endblock %}
 
-{% block content %}
-<h1 style="color: white; margin-bottom: 2rem;">Bienvenido, {{ user.username }}</h1>
+{% block extra_css %}
+<style>
+    /* Dashboard Header */
+    .dashboard-header {
+        margin-bottom: 3rem;
+        animation: fadeIn 0.6s ease-out;
+    }
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-    <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center;">
-        <h2 style="font-size: 3rem; margin-bottom: 0.5rem;">{{ total_calificaciones }}</h2>
-        <p style="font-size: 1.2rem; opacity: 0.9;">Calificaciones</p>
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.9));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+        letter-spacing: -1px;
+    }
+
+    .dashboard-subtitle {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 1.1rem;
+        font-weight: 400;
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .stat-card-pink {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .stat-card-blue {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        opacity: 0.9;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    }
+
+    .stat-number {
+        font-size: 3.5rem;
+        margin-bottom: 0.5rem;
+        font-weight: 800;
+        letter-spacing: -2px;
+        text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        opacity: 0.95;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .currency-widget {
+        margin-bottom: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .currency-widget h2 {
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .currency-form {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 10px;
+    }
+
+    .currency-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .currency-input,
+    .currency-select {
+        width: 100%;
+        padding: 0.8rem;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1rem;
+    }
+
+    .currency-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .conversion-result {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .result-title {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+    }
+
+    .result-amount {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .result-rate {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-top: 0.5rem;
+    }
+
+    .result-timestamp {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        margin-top: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .currency-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header fade-in">
+    <h1 class="dashboard-title">Bienvenido, {{ user.username }} 👋</h1>
+    <p class="dashboard-subtitle">Panel de Control | NUAM - Sistema Tributario</p>
+</div>
+
+<!-- Statistics Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 3rem;" class="fade-in">
+    <div class="card stat-card">
+        <div class="stat-icon">📊</div>
+        <h2 class="stat-number">{{ total_calificaciones }}</h2>
+        <p class="stat-label">Calificaciones Tributarias</p>
     </div>
-    
-    <div class="card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; text-align: center;">
-        <h2 style="font-size: 3rem; margin-bottom: 0.5rem;">{{ total_cargas }}</h2>
-        <p style="font-size: 1.2rem; opacity: 0.9;">Cargas Realizadas</p>
+
+    <div class="card stat-card stat-card-pink">
+        <div class="stat-icon">📤</div>
+        <h2 class="stat-number">{{ total_cargas }}</h2>
+        <p class="stat-label">Cargas Realizadas</p>
     </div>
-    
-    <div class="card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; text-align: center;">
-        <h2 style="font-size: 3rem; margin-bottom: 0.5rem;">100%</h2>
-        <p style="font-size: 1.2rem; opacity: 0.9;">Sistema Activo</p>
+
+    <div class="card stat-card stat-card-blue">
+        <div class="stat-icon">✨</div>
+        <h2 class="stat-number">100%</h2>
+        <p class="stat-label">Sistema Operativo</p>
     </div>
 </div>
 
-<!-- ============================================ -->
-<!-- NUEVO: Widget de Conversión de Divisas -->
-<!-- ============================================ -->
-<div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-    <h2 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+<!-- Currency Converter Widget -->
+<div class="card currency-widget">
+    <h2>
         <span style="font-size: 1.5rem;">💱</span>
         Conversor de Divisas en Tiempo Real
     </h2>
-    
-    <div style="background: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 10px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; align-items: end;">
+
+    <div class="currency-form">
+        <div class="currency-grid">
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Monto</label>
-                <input type="number" id="amount" value="100" 
-                       style="width: 100%; padding: 0.8rem; border: none; border-radius: 5px; font-size: 1.1rem;">
+                <label class="currency-label" for="amount">Monto</label>
+                <input type="number" id="amount" class="currency-input" value="100" min="0" step="0.01">
             </div>
-            
+
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">De</label>
-                <select id="from_currency" 
-                        style="width: 100%; padding: 0.8rem; border: none; border-radius: 5px; font-size: 1.1rem;">
+                <label class="currency-label" for="from_currency">De</label>
+                <select id="from_currency" class="currency-select">
                     <option value="USD" selected>USD - Dólar</option>
                     <option value="EUR">EUR - Euro</option>
                     <option value="CLP">CLP - Peso Chileno</option>
@@ -56,11 +220,10 @@
                     <option value="ARS">ARS - Peso Argentino</option>
                 </select>
             </div>
-            
+
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">A</label>
-                <select id="to_currency" 
-                        style="width: 100%; padding: 0.8rem; border: none; border-radius: 5px; font-size: 1.1rem;">
+                <label class="currency-label" for="to_currency">A</label>
+                <select id="to_currency" class="currency-select">
                     <option value="CLP" selected>CLP - Peso Chileno</option>
                     <option value="USD">USD - Dólar</option>
                     <option value="EUR">EUR - Euro</option>
@@ -72,173 +235,112 @@
                 </select>
             </div>
         </div>
-        
-        <div id="conversion_result" style="margin-top: 1.5rem; padding: 1.5rem; background: rgba(255, 255, 255, 0.2); border-radius: 10px; text-align: center;">
-            <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;">Resultado de la conversión:</div>
-            <div id="result_text" style="font-size: 2rem; font-weight: bold;">Ingrese un monto</div>
-            <div id="rate_text" style="font-size: 0.9rem; opacity: 0.8; margin-top: 0.5rem;">Tasa: -</div>
-            <div id="timestamp" style="font-size: 0.75rem; opacity: 0.7; margin-top: 0.5rem;">-</div>
-        </div>
-        
-        <div id="loading" style="display: none; text-align: center; padding: 1rem;">
-            <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite;"></div>
-        </div>
-        
-        <div id="error_message" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255, 0, 0, 0.2); border-radius: 5px; text-align: center;">
-            Error al obtener la conversión
+
+        <div id="conversion_result" class="conversion-result">
+            <div class="result-title">Resultado de la conversión:</div>
+            <div id="result_text" class="result-amount">Ingrese un monto</div>
+            <div id="rate_text" class="result-rate">Tasa: -</div>
+            <div id="timestamp" class="result-timestamp">-</div>
         </div>
     </div>
 </div>
 
-<style>
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-</style>
+<!-- Quick Actions and Recent Uploads -->
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 2rem; margin-bottom: 2rem;" class="fade-in">
+    <div class="card scale-up">
+        <h2 style="color: #667eea; margin-bottom: 2rem; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 1.75rem;">⚡</span>
+            Acciones Rápidas
+        </h2>
 
-<script>
-// ============================================
-// JavaScript para Conversión en Tiempo Real
-// ============================================
-let conversionTimeout;
-
-function convertCurrency() {
-    const amount = document.getElementById('amount').value;
-    const fromCurrency = document.getElementById('from_currency').value;
-    const toCurrency = document.getElementById('to_currency').value;
-    
-    const resultDiv = document.getElementById('conversion_result');
-    const loadingDiv = document.getElementById('loading');
-    const errorDiv = document.getElementById('error_message');
-    const resultText = document.getElementById('result_text');
-    const rateText = document.getElementById('rate_text');
-    const timestampText = document.getElementById('timestamp');
-    
-    // Validaciones
-    if (!amount || amount <= 0) {
-        resultText.textContent = 'Ingrese un monto válido';
-        rateText.textContent = 'Tasa: -';
-        timestampText.textContent = '-';
-        return;
-    }
-    
-    if (fromCurrency === toCurrency) {
-        resultText.textContent = `${parseFloat(amount).toFixed(2)} ${toCurrency}`;
-        rateText.textContent = 'Tasa: 1.00 (misma moneda)';
-        timestampText.textContent = new Date().toLocaleString('es-CL');
-        return;
-    }
-    
-    // Mostrar loading
-    resultDiv.style.display = 'none';
-    errorDiv.style.display = 'none';
-    loadingDiv.style.display = 'block';
-    
-    // Hacer request AJAX
-    fetch(`/api/v1/divisas/tasa-ajax/?from=${fromCurrency}&to=${toCurrency}`)
-        .then(response => response.json())
-        .then(data => {
-            loadingDiv.style.display = 'none';
-            
-            if (data.success) {
-                const rate = parseFloat(data.rate);
-                const convertedAmount = amount * rate;
-                
-                resultText.textContent = `${convertedAmount.toLocaleString('es-CL', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${toCurrency}`;
-                rateText.textContent = `Tasa: 1 ${fromCurrency} = ${rate.toLocaleString('es-CL', {minimumFractionDigits: 4, maximumFractionDigits: 4})} ${toCurrency}`;
-                timestampText.textContent = `Actualizado: ${new Date().toLocaleString('es-CL')}`;
-                
-                resultDiv.style.display = 'block';
-            } else {
-                errorDiv.textContent = data.error || 'Error al obtener la conversión';
-                errorDiv.style.display = 'block';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            loadingDiv.style.display = 'none';
-            errorDiv.textContent = 'Error de conexión. Intente nuevamente.';
-            errorDiv.style.display = 'block';
-        });
-}
-
-// Debounce para no hacer demasiadas requests
-function debouncedConvert() {
-    clearTimeout(conversionTimeout);
-    conversionTimeout = setTimeout(convertCurrency, 500);
-}
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('amount').addEventListener('input', debouncedConvert);
-    document.getElementById('from_currency').addEventListener('change', convertCurrency);
-    document.getElementById('to_currency').addEventListener('change', convertCurrency);
-    
-    // Conversión inicial
-    convertCurrency();
-});
-</script>
-
-<!-- ============================================ -->
-<!-- Resto del Dashboard -->
-<!-- ============================================ -->
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
-    <div class="card">
-        <h2 style="color: #667eea; margin-bottom: 1.5rem;">Acciones Rápidas</h2>
-        
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <a href="{% url 'accounts:nueva_carga' %}" class="btn btn-primary" style="text-align: center;">
-                📤 Nueva Carga Masiva
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <a href="{% url 'accounts:nueva_carga' %}" class="btn btn-primary" style="text-align: center; justify-content: center;">
+                <span style="font-size: 1.25rem;">📤</span>
+                Nueva Carga Masiva
             </a>
-            
-            <a href="{% url 'accounts:lista_calificaciones' %}" class="btn btn-secondary" style="text-align: center;">
-                📋 Ver Calificaciones
+
+            <a href="{% url 'accounts:lista_calificaciones' %}" class="btn btn-outline" style="text-align: center; justify-content: center;">
+                <span style="font-size: 1.25rem;">📋</span>
+                Ver Calificaciones
             </a>
-            
-            <a href="{% url 'accounts:lista_logs' %}" class="btn btn-secondary" style="text-align: center;">
-                📊 Historial de Operaciones
+
+            <a href="{% url 'accounts:lista_logs' %}" class="btn btn-outline" style="text-align: center; justify-content: center;">
+                <span style="font-size: 1.25rem;">📊</span>
+                Historial de Operaciones
             </a>
         </div>
     </div>
-    
-    <div class="card">
-        <h2 style="color: #667eea; margin-bottom: 1.5rem;">Últimas Cargas</h2>
-        
+
+    <div class="card scale-up" style="animation-delay: 0.1s;">
+        <h2 style="color: #667eea; margin-bottom: 2rem; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 1.5rem;">🕒</span>
+            Últimas Cargas
+        </h2>
+
         {% if ultimas_cargas %}
         <div style="display: flex; flex-direction: column; gap: 1rem;">
             {% for carga in ultimas_cargas %}
-            <div style="padding: 1rem; background: #f8f9fa; border-radius: 5px;">
-                <div style="font-weight: 600; color: #333;">{{ carga.tipo_carga }}</div>
-                <div style="font-size: 0.9rem; color: #666;">{{ carga.fecha_carga|date:"d/m/Y H:i" }}</div>
-                <div style="font-size: 0.85rem; color: #28a745; margin-top: 0.5rem;">
+            <div style="padding: 1.25rem; background: linear-gradient(135deg, #f8f9fa, #ffffff); border-radius: 10px; border-left: 4px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); transition: all 0.3s;">
+                <div style="font-weight: 700; color: #2c3e50; font-size: 0.95rem; margin-bottom: 0.5rem;">{{ carga.tipo_carga }}</div>
+                <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🗓️</span>
+                    {{ carga.fecha_carga|date:"d/m/Y H:i" }}
+                </div>
+                <div class="badge badge-success">
                     ✓ {{ carga.registros_exitosos }} exitosos
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p style="color: #999; text-align: center; padding: 2rem 0;">
-            No hay cargas registradas aún
-        </p>
+        <div style="text-align: center; padding: 3rem 1rem; color: #6c757d;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">📭</div>
+            <p style="font-size: 0.95rem; font-weight: 500;">No hay cargas registradas aún</p>
+        </div>
         {% endif %}
     </div>
 </div>
 
-<div class="card" style="margin-top: 2rem;">
-    <h2 style="color: #667eea; margin-bottom: 1rem;">Información del Sistema</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-        <div>
-            <strong>Usuario:</strong> {{ user.username }}
+<!-- System Information -->
+<div class="card fade-in" style="margin-top: 2rem; animation-delay: 0.2s;">
+    <h2 style="color: #667eea; margin-bottom: 2rem; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.75rem;">ℹ️</span>
+        Información del Sistema
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: linear-gradient(135deg, #f8f9fa, #ffffff); border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+            <div style="font-size: 2rem;">👤</div>
+            <div>
+                <div style="font-size: 0.8rem; color: #6c757d; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Usuario</div>
+                <div style="font-size: 1rem; font-weight: 700; color: #2c3e50;">{{ user.username }}</div>
+            </div>
         </div>
-        <div>
-            <strong>Email:</strong> {{ user.email }}
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: linear-gradient(135deg, #f8f9fa, #ffffff); border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+            <div style="font-size: 2rem;">📧</div>
+            <div>
+                <div style="font-size: 0.8rem; color: #6c757d; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Email</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: #2c3e50;">{{ user.email }}</div>
+            </div>
         </div>
-        <div>
-            <strong>Estado:</strong> <span style="color: #28a745;">✓ Activo</span>
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: linear-gradient(135deg, #d4edda, #c3e6cb); border-radius: 10px; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);">
+            <div style="font-size: 2rem;">✅</div>
+            <div>
+                <div style="font-size: 0.8rem; color: #155724; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Estado</div>
+                <div style="font-size: 1rem; font-weight: 700; color: #28a745;">Activo</div>
+            </div>
         </div>
-        <div>
-            <strong>Última sesión:</strong> {{ user.last_login|date:"d/m/Y H:i" }}
+        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: linear-gradient(135deg, #f8f9fa, #ffffff); border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+            <div style="font-size: 2rem;">🕐</div>
+            <div>
+                <div style="font-size: 0.8rem; color: #6c757d; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Última Sesión</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: #2c3e50;">{{ user.last_login|date:"d/m/Y H:i" }}</div>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Currency Converter -->
+<script src="{% static 'js/currency-converter.js' %}"></script>
 {% endblock %}

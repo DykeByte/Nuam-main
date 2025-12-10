@@ -125,7 +125,11 @@ def registro(request):
 # ===============================
 def mi_login(request):
     """Vista de login con validación de aprobación"""
-    
+
+    # Si el usuario ya está autenticado, redirigir al home
+    if request.user.is_authenticated:
+        return redirect("accounts:home")
+
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         
