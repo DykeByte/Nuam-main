@@ -72,43 +72,54 @@ class CargaMasiva(models.Model):
         ('FACTORES', 'Factores'),
         ('MONITOR', 'Monitor'),
     ]
-    
+
     MERCADO_CHOICES = [
         ('LOCAL', 'Local'),
         ('INTERNACIONAL', 'Internacional'),
         # Agregar los que necesitemos..
     ]
-    
+
     archivo_nombre = models.CharField(max_length=255, blank=True, null=True)
     archivo_path = models.CharField(max_length=500, blank=True, null=True)
     tipo_carga = models.CharField(
-        max_length=50, 
-        choices=TIPO_CARGA_CHOICES, 
+        max_length=50,
+        choices=TIPO_CARGA_CHOICES,
         default='FACTORES'
     )
     mercado = models.CharField(
-        max_length=50, 
-        choices=MERCADO_CHOICES, 
+        max_length=50,
+        choices=MERCADO_CHOICES,
         default='LOCAL'
     )
     iniciado_por = models.ForeignKey(
-        User, 
+        User,
         on_delete=models.CASCADE,
         related_name='cargas_masivas',
         verbose_name="Iniciado por",
     )
     fecha_inicio = models.DateTimeField(auto_now_add=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
     estado = models.CharField(max_length=50, default='PENDIENTE')
+    progreso = models.IntegerField(default=0, help_text="Porcentaje de progreso (0-100)")
     registros_procesados = models.IntegerField(default=0)
     registros_exitosos = models.IntegerField(default=0)
     registros_fallidos = models.IntegerField(default=0)
-    
+    errores_detalle = models.JSONField(default=list, blank=True, help_text="Detalle de errores por fila")
+
     class Meta:
         db_table = 'carga_masiva'
         ordering = ['-fecha_inicio']
-    
+
     def __str__(self):
         return f"Carga {self.id} - {self.tipo_carga} - {self.estado}"
+
+    def duracion_segundos(self):
+        """Retorna la duración del proceso en segundos"""
+        if self.fecha_fin and self.fecha_inicio:
+            return (self.fecha_fin - self.fecha_inicio).total_seconds()
+        elif self.estado == 'PROCESANDO':
+            return (timezone.now() - self.fecha_inicio).total_seconds()
+        return 0
 
 # ---------------------
 # Modelo: CalificacionTributaria (detallado con factores 8..37)

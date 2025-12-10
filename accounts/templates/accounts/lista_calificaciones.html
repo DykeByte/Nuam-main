@@ -1,58 +1,540 @@
-<!-- ============================================ -->
-<!-- 5. lista_calificaciones.html -->
-<!-- Guardar en: accounts/templates/accounts/lista_calificaciones.html -->
-<!-- ============================================ -->
 {% extends 'base.html' %}
 
 {% block title %}Calificaciones - NUAM{% endblock %}
 
+{% block extra_css %}
+<style>
+    .search-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        color: white;
+    }
+
+    .search-box {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .search-btn {
+        padding: 0.75rem 2rem;
+        background: white;
+        color: #667eea;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .search-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .filters-panel {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 1.5rem;
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
+    }
+
+    .filters-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .filter-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .filter-input, .filter-select {
+        width: 100%;
+        padding: 0.6rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.9);
+        font-size: 0.95rem;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .btn-filter {
+        padding: 0.6rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-apply {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-clear {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .results-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .results-count {
+        font-weight: 600;
+        color: #667eea;
+    }
+
+    .per-page-selector {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .per-page-selector select {
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+    thead tr {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+    }
+
+    th:hover {
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    th.sortable::after {
+        content: ' ⇅';
+        opacity: 0.5;
+        font-size: 0.9rem;
+    }
+
+    th.sorted-asc::after {
+        content: ' ↑';
+        opacity: 1;
+    }
+
+    th.sorted-desc::after {
+        content: ' ↓';
+        opacity: 1;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid #dee2e6;
+        transition: background 0.2s;
+    }
+
+    tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    td {
+        padding: 1rem;
+    }
+
+    .badge {
+        padding: 0.35rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .badge-local {
+        background: #667eea;
+        color: white;
+    }
+
+    .badge-internacional {
+        background: #f093fb;
+        color: white;
+    }
+
+    .action-links {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .action-links a {
+        text-decoration: none;
+        font-weight: 500;
+        transition: transform 0.2s;
+    }
+
+    .action-links a:hover {
+        transform: scale(1.1);
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .pagination-btn {
+        padding: 0.6rem 1.2rem;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+
+    .pagination-btn:hover:not(.disabled) {
+        background: #5568d3;
+        transform: translateY(-2px);
+    }
+
+    .pagination-btn.disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .pagination-info {
+        font-weight: 600;
+        color: #667eea;
+    }
+
+    .page-numbers {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .page-number {
+        padding: 0.5rem 0.9rem;
+        background: white;
+        border: 2px solid #667eea;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #667eea;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .page-number:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    .page-number.active {
+        background: #667eea;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+
+    .empty-state-text {
+        font-size: 1.2rem;
+        color: #999;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h1 style="color: #667eea;">Calificaciones Tributarias</h1>
+        <h1 style="color: #667eea;">📊 Calificaciones Tributarias</h1>
         <a href="{% url 'accounts:nueva_carga' %}" class="btn btn-primary">+ Nueva Carga</a>
     </div>
-    
-    {% if calificaciones %}
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                    <th style="padding: 1rem; text-align: left;">Instrumento</th>
-                    <th style="padding: 1rem; text-align: left;">Corredor</th>
-                    <th style="padding: 1rem; text-align: left;">Mercado</th>
-                    <th style="padding: 1rem; text-align: left;">Fecha Pago</th>
-                    <th style="padding: 1rem; text-align: left;">Fecha Creación</th>
-                    <th style="padding: 1rem; text-align: center;">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for calificacion in calificaciones %}
-                <tr style="border-bottom: 1px solid #dee2e6;">
-                    <td style="padding: 1rem;">{{ calificacion.instrumento|default:"N/A" }}</td>
-                    <td style="padding: 1rem;">{{ calificacion.corredor_dueno|default:"N/A" }}</td>
-                    <td style="padding: 1rem;">
-                        <span style="background: #667eea; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
-                            {{ calificacion.mercado|default:"N/A" }}
-                        </span>
-                    </td>
-                    <td style="padding: 1rem;">{{ calificacion.fecha_pago|date:"d/m/Y"|default:"N/A" }}</td>
-                    <td style="padding: 1rem;">{{ calificacion.created_at|date:"d/m/Y H:i" }}</td>
-                    <td style="padding: 1rem; text-align: center;">
-                        <a href="{% url 'accounts:detalle_calificacion' calificacion.pk %}" style="color: #667eea; text-decoration: none; margin-right: 1rem;">👁️ Ver</a>
-                        <a href="{% url 'accounts:editar_calificacion' calificacion.pk %}" style="color: #28a745; text-decoration: none; margin-right: 1rem;">✏️ Editar</a>
-                        <a href="{% url 'accounts:eliminar_calificacion' calificacion.pk %}" style="color: #dc3545; text-decoration: none;">🗑️ Eliminar</a>
-                    </td>
-                </tr>
+
+    <!-- SEARCH & FILTERS -->
+    <div class="search-section">
+        <form method="get" action="">
+            <!-- Quick Search -->
+            <div class="search-box">
+                <input
+                    type="text"
+                    name="search"
+                    class="search-input"
+                    placeholder="🔍 Buscar por corredor, instrumento, mercado o descripción..."
+                    value="{{ search_query }}"
+                >
+                <button type="submit" class="search-btn">🔍 Buscar</button>
+            </div>
+
+            <!-- Advanced Filters -->
+            <details {% if mercado_filter or divisa_filter or fecha_desde or fecha_hasta %}open{% endif %}>
+                <summary class="filters-title" style="cursor: pointer;">📊 Filtros Avanzados</summary>
+                <div class="filters-panel">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label>Mercado:</label>
+                            <select name="mercado" class="filter-select">
+                                <option value="">Todos</option>
+                                {% for mercado in all_mercados %}
+                                <option value="{{ mercado }}" {% if mercado_filter == mercado %}selected{% endif %}>
+                                    {{ mercado }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Divisa:</label>
+                            <select name="divisa" class="filter-select">
+                                <option value="">Todas</option>
+                                {% for divisa in all_divisas %}
+                                <option value="{{ divisa }}" {% if divisa_filter == divisa %}selected{% endif %}>
+                                    {{ divisa }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Fecha desde:</label>
+                            <input
+                                type="date"
+                                name="fecha_desde"
+                                class="filter-input"
+                                value="{{ fecha_desde }}"
+                            >
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Fecha hasta:</label>
+                            <input
+                                type="date"
+                                name="fecha_hasta"
+                                class="filter-input"
+                                value="{{ fecha_hasta }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button type="submit" class="btn-filter btn-apply">Aplicar Filtros</button>
+                        <a href="{% url 'accounts:lista_calificaciones' %}" class="btn-filter btn-clear">Limpiar</a>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Hidden fields to preserve sorting and pagination -->
+            <input type="hidden" name="sort" value="{{ sort_by }}">
+            <input type="hidden" name="per_page" value="{{ items_per_page }}">
+        </form>
+    </div>
+
+    {% if total_count > 0 %}
+        <!-- Results Info -->
+        <div class="results-info">
+            <div class="results-count">
+                📈 Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ total_count }} resultados
+            </div>
+            <div class="per-page-selector">
+                <label>Mostrar:</label>
+                <select onchange="window.location.href=updateQueryParam('per_page', this.value)">
+                    <option value="10" {% if items_per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="25" {% if items_per_page == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if items_per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if items_per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+                <span>por página</span>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sortable {% if sort_by == 'id' %}sorted-asc{% elif sort_by == '-id' %}sorted-desc{% endif %}"
+                            onclick="window.location.href=updateQueryParam('sort', '{% if sort_by == 'id' %}-id{% else %}id{% endif %}')">
+                            ID
+                        </th>
+                        <th>Instrumento</th>
+                        <th>Corredor</th>
+                        <th>Mercado</th>
+                        <th>Divisa</th>
+                        <th class="sortable {% if sort_by == 'fecha_pago' %}sorted-asc{% elif sort_by == '-fecha_pago' %}sorted-desc{% endif %}"
+                            onclick="window.location.href=updateQueryParam('sort', '{% if sort_by == 'fecha_pago' %}-fecha_pago{% else %}fecha_pago{% endif %}')">
+                            Fecha Pago
+                        </th>
+                        <th class="sortable {% if sort_by == 'valor_historico' %}sorted-asc{% elif sort_by == '-valor_historico' %}sorted-desc{% endif %}"
+                            onclick="window.location.href=updateQueryParam('sort', '{% if sort_by == 'valor_historico' %}-valor_historico{% else %}valor_historico{% endif %}')">
+                            Valor
+                        </th>
+                        <th class="sortable {% if sort_by == 'created_at' %}sorted-asc{% elif sort_by == '-created_at' %}sorted-desc{% endif %}"
+                            onclick="window.location.href=updateQueryParam('sort', '{% if sort_by == 'created_at' %}-created_at{% else %}created_at{% endif %}')">
+                            Fecha Creación
+                        </th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for calificacion in calificaciones %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ calificacion.id }}</td>
+                        <td>{{ calificacion.instrumento|default:"N/A" }}</td>
+                        <td>{{ calificacion.corredor_dueno|default:"N/A" }}</td>
+                        <td>
+                            <span class="badge {% if calificacion.mercado == 'LOCAL' %}badge-local{% else %}badge-internacional{% endif %}">
+                                {{ calificacion.mercado|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td>{{ calificacion.divisa|default:"N/A" }}</td>
+                        <td>{{ calificacion.fecha_pago|date:"d/m/Y"|default:"N/A" }}</td>
+                        <td style="font-weight: 600;">{{ calificacion.valor_historico|floatformat:2|default:"N/A" }}</td>
+                        <td>{{ calificacion.created_at|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <div class="action-links">
+                                <a href="{% url 'accounts:detalle_calificacion' calificacion.pk %}" style="color: #667eea;">👁️ Ver</a>
+                                <a href="{% url 'accounts:editar_calificacion' calificacion.pk %}" style="color: #28a745;">✏️ Editar</a>
+                                <a href="{% url 'accounts:eliminar_calificacion' calificacion.pk %}" style="color: #dc3545;">🗑️ Eliminar</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&sort={{ sort_by }}&per_page={{ items_per_page }}&search={{ search_query }}&mercado={{ mercado_filter }}&divisa={{ divisa_filter }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
+                   class="pagination-btn">
+                    ← Anterior
+                </a>
+            {% else %}
+                <span class="pagination-btn disabled">← Anterior</span>
+            {% endif %}
+
+            <div class="page-numbers">
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="page-number active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}&sort={{ sort_by }}&per_page={{ items_per_page }}&search={{ search_query }}&mercado={{ mercado_filter }}&divisa={{ divisa_filter }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
+                           class="page-number">{{ num }}</a>
+                    {% endif %}
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            </div>
+
+            <span class="pagination-info">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&sort={{ sort_by }}&per_page={{ items_per_page }}&search={{ search_query }}&mercado={{ mercado_filter }}&divisa={{ divisa_filter }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
+                   class="pagination-btn">
+                    Siguiente →
+                </a>
+            {% else %}
+                <span class="pagination-btn disabled">Siguiente →</span>
+            {% endif %}
+        </div>
+        {% endif %}
     {% else %}
-    <div style="text-align: center; padding: 3rem;">
-        <p style="font-size: 1.2rem; color: #999; margin-bottom: 1rem;">No hay calificaciones registradas</p>
-        <a href="{% url 'accounts:nueva_carga' %}" class="btn btn-primary">Realizar primera carga</a>
-    </div>
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p class="empty-state-text">
+                {% if search_query or mercado_filter or divisa_filter or fecha_desde or fecha_hasta %}
+                    No se encontraron calificaciones con los filtros aplicados
+                {% else %}
+                    No hay calificaciones registradas
+                {% endif %}
+            </p>
+            {% if search_query or mercado_filter or divisa_filter or fecha_desde or fecha_hasta %}
+                <a href="{% url 'accounts:lista_calificaciones' %}" class="btn btn-primary">Limpiar Filtros</a>
+            {% else %}
+                <a href="{% url 'accounts:nueva_carga' %}" class="btn btn-primary">Realizar primera carga</a>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
+
+<script>
+// Helper function to update query parameters
+function updateQueryParam(key, value) {
+    const url = new URL(window.location.href);
+    url.searchParams.set(key, value);
+    url.searchParams.set('page', '1'); // Reset to first page when changing parameters
+    return url.toString();
+}
+</script>
 {% endblock %}

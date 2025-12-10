@@ -1,85 +1,220 @@
-<!-- ============================================ -->
-<!-- 11. detalle_carga.html -->
-<!-- Guardar en: accounts/templates/accounts/detalle_carga.html -->
-<!-- ============================================ -->
 {% extends 'base.html' %}
 
 {% block title %}Detalle Carga - NUAM{% endblock %}
 
+{% block extra_css %}
+<style>
+    .error-report {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .error-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        padding: 1.5rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .error-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .error-table thead tr {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .error-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #dc3545;
+    }
+
+    .error-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        vertical-align: top;
+    }
+
+    .error-table tbody tr:hover {
+        background: #fff3cd;
+    }
+
+    .error-row-number {
+        font-weight: 700;
+        color: #dc3545;
+        font-size: 1.1rem;
+    }
+
+    .error-field {
+        color: #856404;
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+        background: #fff3cd;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .error-message {
+        color: #721c24;
+        margin-bottom: 0.5rem;
+    }
+
+    .error-value {
+        color: #666;
+        font-family: 'Courier New', monospace;
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .suggestion {
+        background: #d1ecf1;
+        border-left: 4px solid #0c5460;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        border-radius: 4px;
+        color: #0c5460;
+        font-size: 0.9rem;
+    }
+
+    .suggestion::before {
+        content: "💡 ";
+        font-weight: bold;
+    }
+
+    .progress-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .progress-completado {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .progress-error {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .progress-procesando {
+        background: #cce5ff;
+        color: #004085;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h1 style="color: #667eea;">Detalle de Carga</h1>
-        <a href="{% url 'accounts:lista_cargas' %}" class="btn btn-secondary">Volver</a>
+        <h1 style="color: #667eea;">📊 Detalle de Carga #{{ carga.id }}</h1>
+        <a href="{% url 'accounts:lista_cargas' %}" class="btn btn-secondary">← Volver</a>
     </div>
-    
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
-        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; text-align: center;">
-            <div style="font-size: 2rem; font-weight: 600; color: #667eea;">{{ carga.registros_procesados }}</div>
-            <div style="color: #666; margin-top: 0.5rem;">Procesados</div>
+
+    <!-- Status Badge -->
+    <div style="margin-bottom: 2rem;">
+        <span class="progress-badge {% if carga.estado == 'COMPLETADO' %}progress-completado{% elif carga.estado == 'ERROR' %}progress-error{% else %}progress-procesando{% endif %}">
+            {% if carga.estado == 'COMPLETADO' %}
+                ✅ COMPLETADO
+            {% elif carga.estado == 'COMPLETADO_CON_ERRORES' %}
+                ⚠️ COMPLETADO CON ERRORES
+            {% elif carga.estado == 'ERROR' %}
+                ❌ ERROR
+            {% else %}
+                ⏳ {{ carga.estado }}
+            {% endif %}
+        </span>
+        {% if carga.progreso < 100 and carga.estado == 'PROCESANDO' %}
+            <span style="margin-left: 1rem; color: #667eea; font-weight: 600;">{{ carga.progreso }}%</span>
+        {% endif %}
+    </div>
+
+    <!-- Statistics Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 1.5rem; border-radius: 8px; text-align: center; color: white;">
+            <div style="font-size: 2.5rem; font-weight: 700;">{{ carga.registros_procesados }}</div>
+            <div style="margin-top: 0.5rem; opacity: 0.9;">📝 Procesados</div>
         </div>
-        
-        <div style="background: #d4edda; padding: 1.5rem; border-radius: 8px; text-align: center;">
-            <div style="font-size: 2rem; font-weight: 600; color: #28a745;">{{ carga.registros_exitosos }}</div>
-            <div style="color: #155724; margin-top: 0.5rem;">Exitosos</div>
+
+        <div style="background: linear-gradient(135deg, #28a745, #20c997); padding: 1.5rem; border-radius: 8px; text-align: center; color: white;">
+            <div style="font-size: 2.5rem; font-weight: 700;">{{ carga.registros_exitosos }}</div>
+            <div style="margin-top: 0.5rem; opacity: 0.9;">✅ Exitosos</div>
         </div>
-        
-        <div style="background: #f8d7da; padding: 1.5rem; border-radius: 8px; text-align: center;">
-            <div style="font-size: 2rem; font-weight: 600; color: #dc3545;">{{ carga.registros_fallidos }}</div>
-            <div style="color: #721c24; margin-top: 0.5rem;">Fallidos</div>
+
+        <div style="background: linear-gradient(135deg, #dc3545, #c82333); padding: 1.5rem; border-radius: 8px; text-align: center; color: white;">
+            <div style="font-size: 2.5rem; font-weight: 700;">{{ carga.registros_fallidos }}</div>
+            <div style="margin-top: 0.5rem; opacity: 0.9;">❌ Fallidos</div>
         </div>
-        
-        <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; text-align: center;">
-            <div style="font-size: 2rem; font-weight: 600; color: #856404;">
-                {% widthratio carga.registros_exitosos carga.registros_procesados 100 %}%
+
+        <div style="background: linear-gradient(135deg, #ffc107, #ff9800); padding: 1.5rem; border-radius: 8px; text-align: center; color: white;">
+            <div style="font-size: 2.5rem; font-weight: 700;">
+                {% if carga.registros_procesados > 0 %}
+                    {% widthratio carga.registros_exitosos carga.registros_procesados 100 %}%
+                {% else %}
+                    0%
+                {% endif %}
             </div>
-            <div style="color: #856404; margin-top: 0.5rem;">Tasa de Éxito</div>
+            <div style="margin-top: 0.5rem; opacity: 0.9;">📊 Tasa de Éxito</div>
         </div>
     </div>
-    
+
+    <!-- Load Information -->
     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-        <h3 style="color: #667eea; margin-bottom: 1rem;">Información de la Carga</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">ℹ️ Información de la Carga</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
             <div>
-                <strong>Tipo de Carga:</strong> 
+                <strong>Tipo de Carga:</strong>
                 <span style="background: #667eea; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; margin-left: 0.5rem;">
                     {{ carga.tipo_carga }}
                 </span>
             </div>
-            <div><strong>Archivo:</strong> {{ carga.nombre_archivo }}</div>
-            <div><strong>Usuario:</strong> {{ carga.usuario.username }}</div>
-            <div><strong>Fecha:</strong> {{ carga.fecha_carga|date:"d/m/Y H:i:s" }}</div>
+            <div><strong>Archivo:</strong> {{ carga.archivo_nombre|default:"N/A" }}</div>
+            <div><strong>Usuario:</strong> {{ carga.iniciado_por.username }}</div>
+            <div><strong>Fecha Inicio:</strong> {{ carga.fecha_inicio|date:"d/m/Y H:i:s" }}</div>
+            {% if carga.fecha_fin %}
+            <div><strong>Fecha Fin:</strong> {{ carga.fecha_fin|date:"d/m/Y H:i:s" }}</div>
+            <div><strong>Duración:</strong> {{ carga.duracion_segundos|floatformat:2 }} segundos</div>
+            {% endif %}
         </div>
     </div>
-    
+
+    <!-- Detailed Error Report -->
     {% if carga.errores_detalle %}
-    <div style="background: #f8d7da; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #dc3545; margin-bottom: 2rem;">
-        <h3 style="color: #721c24; margin-bottom: 1rem;">⚠️ Errores Detectados</h3>
-        <pre style="color: #721c24; white-space: pre-wrap; margin: 0;">{{ carga.errores_detalle }}</pre>
-    </div>
-    {% endif %}
-    
-    {% if calificaciones %}
-    <div>
-        <h3 style="color: #667eea; margin-bottom: 1rem;">Calificaciones Cargadas ({{ calificaciones.count }})</h3>
+    <div class="error-report" style="margin-bottom: 2rem;">
+        <div class="error-header">
+            ⚠️ Reporte Detallado de Errores ({{ carga.errores_detalle|length }} error{{ carga.errores_detalle|length|pluralize:"es" }})
+        </div>
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+            <table class="error-table">
                 <thead>
-                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                        <th style="padding: 1rem; text-align: left;">Instrumento</th>
-                        <th style="padding: 1rem; text-align: left;">Corredor</th>
-                        <th style="padding: 1rem; text-align: left;">Mercado</th>
-                        <th style="padding: 1rem; text-align: center;">Acciones</th>
+                    <tr>
+                        <th style="width: 80px;">Fila</th>
+                        <th style="width: 150px;">Campo</th>
+                        <th>Error</th>
+                        <th style="width: 150px;">Valor Recibido</th>
+                        <th>Sugerencia de Corrección</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for calificacion in calificaciones %}
-                    <tr style="border-bottom: 1px solid #dee2e6;">
-                        <td style="padding: 1rem;">{{ calificacion.instrumento|default:"N/A" }}</td>
-                        <td style="padding: 1rem;">{{ calificacion.corredor_dueno|default:"N/A" }}</td>
-                        <td style="padding: 1rem;">{{ calificacion.mercado|default:"N/A" }}</td>
-                        <td style="padding: 1rem; text-align: center;">
-                            <a href="{% url 'accounts:detalle_calificacion' calificacion.pk %}" style="color: #667eea; text-decoration: none;">👁️ Ver</a>
+                    {% for error in carga.errores_detalle %}
+                    <tr>
+                        <td class="error-row-number">{{ error.fila }}</td>
+                        <td><span class="error-field">{{ error.campo }}</span></td>
+                        <td class="error-message">{{ error.error }}</td>
+                        <td><span class="error-value">{{ error.valor_recibido }}</span></td>
+                        <td>
+                            <div class="suggestion">{{ error.sugerencia }}</div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -88,5 +223,129 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Loaded Califications -->
+    {% if calificaciones %}
+    <div>
+        <h3 style="color: #667eea; margin-bottom: 1rem;">✅ Calificaciones Cargadas ({{ calificaciones.count }})</h3>
+        <div style="overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                        <th style="padding: 1rem; text-align: left;">ID</th>
+                        <th style="padding: 1rem; text-align: left;">Instrumento</th>
+                        <th style="padding: 1rem; text-align: left;">Corredor</th>
+                        <th style="padding: 1rem; text-align: left;">Mercado</th>
+                        <th style="padding: 1rem; text-align: left;">Divisa</th>
+                        <th style="padding: 1rem; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for calificacion in calificaciones %}
+                    <tr style="border-bottom: 1px solid #dee2e6; transition: background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                        <td style="padding: 1rem; font-weight: 600;">{{ calificacion.id }}</td>
+                        <td style="padding: 1rem;">{{ calificacion.instrumento|default:"N/A" }}</td>
+                        <td style="padding: 1rem;">{{ calificacion.corredor_dueno|default:"N/A" }}</td>
+                        <td style="padding: 1rem;">
+                            <span style="background: #667eea; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">
+                                {{ calificacion.mercado|default:"N/A" }}
+                            </span>
+                        </td>
+                        <td style="padding: 1rem;">{{ calificacion.divisa|default:"N/A" }}</td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <a href="{% url 'accounts:detalle_calificacion' calificacion.pk %}" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                                👁️ Ver Detalle
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+        <p style="color: #666; font-size: 1.1rem;">No hay calificaciones registradas en esta carga</p>
+    </div>
+    {% endif %}
 </div>
+
+<!-- Progress Bar -->
+{% if carga.estado == 'PROCESANDO' or carga.progreso < 100 %}
+<div id="progress-modal" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 1000; min-width: 500px;">
+    <h3 style="color: #667eea; margin-bottom: 1.5rem; text-align: center;">⏳ Procesando Carga...</h3>
+
+    <div style="background: #f8f9fa; border-radius: 8px; padding: 0.5rem; margin-bottom: 1rem;">
+        <div id="progress-bar" style="background: linear-gradient(90deg, #667eea, #764ba2); height: 30px; border-radius: 6px; transition: width 0.3s ease; width: {{ carga.progreso }}%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+            <span id="progress-text">{{ carga.progreso }}%</span>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; margin-top: 1rem;">
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #667eea;" id="modal-procesados">{{ carga.registros_procesados }}</div>
+            <div style="font-size: 0.85rem; color: #666;">Procesados</div>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #28a745;" id="modal-exitosos">{{ carga.registros_exitosos }}</div>
+            <div style="font-size: 0.85rem; color: #666;">Exitosos</div>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: #dc3545;" id="modal-fallidos">{{ carga.registros_fallidos }}</div>
+            <div style="font-size: 0.85rem; color: #666;">Fallidos</div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 1.5rem; color: #666; font-size: 0.9rem;">
+        <span id="duracion-text">Tiempo transcurrido: {{ carga.duracion_segundos|floatformat:0 }}s</span>
+    </div>
+</div>
+
+<div id="progress-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if carga.estado == 'PROCESANDO' or carga.progreso < 100 %}
+<script>
+let cargaId = {{ carga.id }};
+let progressInterval;
+
+function updateProgress() {
+    fetch('/accounts/cargas/' + cargaId + '/progress/')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Progress update:', data);
+
+            // Update progress bar
+            document.getElementById('progress-bar').style.width = data.progreso + '%';
+            document.getElementById('progress-text').textContent = data.progreso + '%';
+
+            // Update stats
+            document.getElementById('modal-procesados').textContent = data.registros_procesados;
+            document.getElementById('modal-exitosos').textContent = data.registros_exitosos;
+            document.getElementById('modal-fallidos').textContent = data.registros_fallidos;
+            document.getElementById('duracion-text').textContent = 'Tiempo transcurrido: ' + Math.floor(data.duracion_segundos) + 's';
+
+            // If completed, stop polling and reload page
+            if (data.completado) {
+                clearInterval(progressInterval);
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching progress:', error);
+        });
+}
+
+// Start polling every 2 seconds
+progressInterval = setInterval(updateProgress, 2000);
+
+// Initial update
+updateProgress();
+</script>
+{% endif %}
 {% endblock %}

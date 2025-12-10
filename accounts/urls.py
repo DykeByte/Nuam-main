@@ -27,4 +27,7 @@ urlpatterns = [
 
     # Logs/Auditoría
     path('logs/', views.lista_logs, name='lista_logs'),
+
+    # Progress API
+    path('cargas/<int:pk>/progress/', views.carga_progress, name='carga_progress'),
 ]

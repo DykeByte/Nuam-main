@@ -1,0 +1,25 @@
+# Backup List of Deleted Files - December 9, 2025
+
+## Files Removed During Cleanup:
+
+### Old/Backup Files:
+1. docker-compose-old.yml
+2. cert.pem
+3. key.pem
+
+### Test Scripts:
+4. test_api.py
+5. test_kafka.py
+6. mini_test_kafka.py
+7. install_local_ssl.sh
+8. run_https.py
+
+### Temporary Files:
+9. services/dashboard-frontend/src/Artifact
+
+### System Files:
+10. All .DS_Store files
+11. All __pycache__ directories
+12. All .pyc files
+
+These files were backed up and can be restored from git history if needed.

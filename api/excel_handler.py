@@ -15,18 +15,57 @@ logger = logging.getLogger(__name__)
 
 
 class ExcelHandler:
-    """Manejador para procesar archivos Excel con integración Kafka"""
-    
+    """Manejador para procesar archivos Excel con integración Kafka y tracking de progreso"""
+
     def __init__(self, archivo, tipo_carga, usuario):
         self.archivo = archivo
         self.tipo_carga = tipo_carga
         self.usuario = usuario
         self.mercado = None
         self.errores = []
+        self.errores_detalle = []  # Almacena errores estructurados
         self.registros_exitosos = 0
         self.registros_fallidos = 0
-        
+
         logger.info(f"📦 ExcelHandler creado para archivo {archivo.name}")
+
+    def _actualizar_progreso(self, carga, fila_actual, total_filas):
+        """Actualiza el progreso de la carga"""
+        progreso = int((fila_actual / total_filas) * 100)
+        carga.progreso = progreso
+        carga.registros_procesados = fila_actual
+        carga.registros_exitosos = self.registros_exitosos
+        carga.registros_fallidos = self.registros_fallidos
+        carga.save(update_fields=['progreso', 'registros_procesados', 'registros_exitosos', 'registros_fallidos'])
+        logger.debug(f"📊 Progreso: {progreso}% ({fila_actual}/{total_filas})")
+
+    def _registrar_error_detallado(self, num_fila, campo, error_msg, valor_recibido=None):
+        """Registra un error con detalles y sugerencias"""
+        sugerencias = {
+            'fecha_pago': "Formato esperado: YYYY-MM-DD (ejemplo: 2025-12-31)",
+            'valor_historico': "Debe ser un número decimal válido (ejemplo: 1500000.50)",
+            'secuencia_evento': "Debe ser un número entero",
+            'numero_dividendo': "Debe ser un número entero",
+            'divisa': "Divisas válidas: USD, CLP, EUR, COP, PEN, MXN, BRL, ARS",
+            'mercado': "Valores válidos: LOCAL, INTERNACIONAL",
+            'acopio_lsfxf': "Valores válidos: TRUE, FALSE, SI, NO, 1, 0",
+            'corredor_dueno': "El campo corredor dueño es obligatorio",
+            'instrumento': "El campo instrumento es obligatorio",
+        }
+
+        # Determinar sugerencia
+        sugerencia = sugerencias.get(campo, "Verifique que el valor sea correcto para este campo")
+
+        error_detalle = {
+            'fila': num_fila,
+            'campo': campo,
+            'error': str(error_msg),
+            'valor_recibido': str(valor_recibido) if valor_recibido is not None else 'N/A',
+            'sugerencia': sugerencia
+        }
+
+        self.errores_detalle.append(error_detalle)
+        logger.warning(f"⚠️ Error en fila {num_fila}, campo '{campo}': {error_msg}")
 
     # ----------------------------------------------------------
     # NORMALIZACIÓN DE COLUMNAS DE FACTORES
@@ -135,11 +174,15 @@ class ExcelHandler:
             # PROCESAR FILAS
             # -------------------------------------------------------
 
-            logger.info(f"🔄 Procesando {len(df_merged)} filas...")
+            total_filas = len(df_merged)
+            logger.info(f"🔄 Procesando {total_filas} filas...")
 
             for index, row in df_merged.iterrows():
+                num_fila = index + 2  # +2 porque Excel empieza en 1 y hay header
+                fila_actual = index + 1
+
                 try:
-                    calificacion = self._procesar_fila(row, carga, index + 2)
+                    calificacion = self._procesar_fila(row, carga, num_fila)
                     self.registros_exitosos += 1
 
                     try:
@@ -149,9 +192,20 @@ class ExcelHandler:
 
                 except Exception as e:
                     self.registros_fallidos += 1
-                    msg = f"Fila {index+2}: {e}"
+                    msg = f"Fila {num_fila}: {e}"
                     self.errores.append(msg)
-                    logger.warning(msg)
+
+                    # Registrar error detallado
+                    self._registrar_error_detallado(
+                        num_fila=num_fila,
+                        campo='general',
+                        error_msg=str(e),
+                        valor_recibido=None
+                    )
+
+                # Actualizar progreso cada 10 filas o en la última
+                if fila_actual % 10 == 0 or fila_actual == total_filas:
+                    self._actualizar_progreso(carga, fila_actual, total_filas)
 
             # -------------------------------------------------------
             # FINALIZAR
@@ -159,7 +213,10 @@ class ExcelHandler:
 
             carga.registros_exitosos = self.registros_exitosos
             carga.registros_fallidos = self.registros_fallidos
+            carga.errores_detalle = self.errores_detalle
             carga.estado = "COMPLETADO" if self.registros_fallidos == 0 else "COMPLETADO_CON_ERRORES"
+            carga.progreso = 100
+            carga.fecha_fin = timezone.now()
             carga.save()
 
             try:

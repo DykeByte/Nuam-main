@@ -561,10 +561,92 @@ def descargar_plantilla(request):
 # ===============================
 @login_required
 def lista_calificaciones(request):
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+
     logger.debug(f"📋 Listando calificaciones - Usuario: {request.user.username}")
+
+    # Base queryset
     calificaciones = CalificacionTributaria.objects.filter(usuario=request.user)
-    logger.debug(f"   Total encontradas: {calificaciones.count()}")
-    return render(request, "accounts/lista_calificaciones.html", {"calificaciones": calificaciones})
+
+    # ============ BÚSQUEDA RÁPIDA ============
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        calificaciones = calificaciones.filter(
+            Q(corredor_dueno__icontains=search_query) |
+            Q(instrumento__icontains=search_query) |
+            Q(mercado__icontains=search_query) |
+            Q(descripcion__icontains=search_query)
+        )
+        logger.debug(f"   🔍 Búsqueda: '{search_query}' - {calificaciones.count()} resultados")
+
+    # ============ FILTROS AVANZADOS ============
+    mercado_filter = request.GET.get('mercado', '')
+    if mercado_filter:
+        calificaciones = calificaciones.filter(mercado=mercado_filter)
+        logger.debug(f"   📊 Filtro mercado: {mercado_filter}")
+
+    divisa_filter = request.GET.get('divisa', '')
+    if divisa_filter:
+        calificaciones = calificaciones.filter(divisa=divisa_filter)
+        logger.debug(f"   💱 Filtro divisa: {divisa_filter}")
+
+    fecha_desde = request.GET.get('fecha_desde', '')
+    if fecha_desde:
+        calificaciones = calificaciones.filter(fecha_pago__gte=fecha_desde)
+        logger.debug(f"   📅 Fecha desde: {fecha_desde}")
+
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+    if fecha_hasta:
+        calificaciones = calificaciones.filter(fecha_pago__lte=fecha_hasta)
+        logger.debug(f"   📅 Fecha hasta: {fecha_hasta}")
+
+    # ============ ORDENAMIENTO ============
+    sort_by = request.GET.get('sort', '-created_at')  # Default: más recientes primero
+    valid_sorts = ['id', '-id', 'created_at', '-created_at', 'fecha_pago', '-fecha_pago', 'valor_historico', '-valor_historico']
+
+    if sort_by in valid_sorts:
+        calificaciones = calificaciones.order_by(sort_by)
+        logger.debug(f"   🔃 Ordenamiento: {sort_by}")
+    else:
+        calificaciones = calificaciones.order_by('-created_at')
+
+    # ============ PAGINACIÓN ============
+    items_per_page = request.GET.get('per_page', '50')
+    try:
+        items_per_page = int(items_per_page)
+        if items_per_page not in [10, 25, 50, 100]:
+            items_per_page = 50
+    except ValueError:
+        items_per_page = 50
+
+    paginator = Paginator(calificaciones, items_per_page)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    logger.debug(f"   Total encontradas: {paginator.count}")
+    logger.debug(f"   Mostrando página {page_obj.number} de {paginator.num_pages}")
+
+    # Obtener valores únicos para filtros
+    all_mercados = CalificacionTributaria.objects.filter(usuario=request.user).values_list('mercado', flat=True).distinct()
+    all_divisas = CalificacionTributaria.objects.filter(usuario=request.user).values_list('divisa', flat=True).distinct()
+
+    context = {
+        'page_obj': page_obj,
+        'calificaciones': page_obj.object_list,
+        'total_count': paginator.count,
+        'search_query': search_query,
+        'mercado_filter': mercado_filter,
+        'divisa_filter': divisa_filter,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'sort_by': sort_by,
+        'items_per_page': items_per_page,
+        'all_mercados': sorted(set(filter(None, all_mercados))),
+        'all_divisas': sorted(set(filter(None, all_divisas))),
+    }
+
+    return render(request, "accounts/lista_calificaciones.html", context)
 
 
 @login_required
@@ -629,15 +711,45 @@ def eliminar_calificacion(request, pk):
 def lista_logs(request):
     """Muestra los logs de operaciones del usuario"""
     from api.models import LogOperacion
-    
+
     logger.debug(f"📋 Lista de logs - Usuario: {request.user.username}")
-    
+
     try:
         logs = LogOperacion.objects.filter(usuario=request.user).order_by('-fecha_hora')[:100]
         logger.debug(f"   Total de logs: {logs.count()}")
-        
+
         return render(request, "accounts/lista_logs.html", {"logs": logs})
-        
+
     except Exception as e:
         logger.error(f"❌ Error listando logs: {str(e)}", exc_info=True)
         return render(request, "accounts/lista_logs.html", {"logs": []})
+
+
+# ===============================
+# Progress API for Carga Masiva
+# ===============================
+@login_required
+def carga_progress(request, pk):
+    """Endpoint para obtener el progreso de una carga masiva"""
+    from django.http import JsonResponse
+    from api.models import CargaMasiva
+
+    try:
+        carga = get_object_or_404(CargaMasiva, pk=pk, iniciado_por=request.user)
+
+        response_data = {
+            'id': carga.id,
+            'estado': carga.estado,
+            'progreso': carga.progreso,
+            'registros_procesados': carga.registros_procesados,
+            'registros_exitosos': carga.registros_exitosos,
+            'registros_fallidos': carga.registros_fallidos,
+            'duracion_segundos': carga.duracion_segundos(),
+            'completado': carga.estado in ['COMPLETADO', 'COMPLETADO_CON_ERRORES', 'ERROR']
+        }
+
+        return JsonResponse(response_data)
+
+    except Exception as e:
+        logger.error(f"Error obteniendo progreso: {e}")
+        return JsonResponse({'error': str(e)}, status=500)

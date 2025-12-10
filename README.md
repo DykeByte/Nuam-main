@@ -1,6 +1,6 @@
 # NUAM - Sistema de Gestión de Calificaciones Tributarias
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 ![Django](https://img.shields.io/badge/django-5.2.8-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -11,34 +11,49 @@
 
 ## 🆕 **ACTUALIZACIONES RECIENTES (Diciembre 2024)**
 
-### ✨ **Versión 2.0.0 - Actualización Mayor**
+### ✨ **Versión 2.1.0 - Nueva Actualización**
 
-#### **1. Apache2 como Reverse Proxy Principal** 🔐
+#### **1. Sistema Avanzado de Búsqueda y Filtros** 🔍
+- **Búsqueda rápida**: Búsqueda instantánea por corredor, instrumento, mercado o descripción
+- **Filtros avanzados**: Filtrado por mercado, divisa, rango de fechas
+- **Ordenamiento dinámico**: Click en columnas para ordenar (ID, fecha pago, valor, fecha creación)
+- **Paginación inteligente**: 10, 25, 50, 100 resultados por página
+- **Preservación de estado**: Filtros y ordenamiento se mantienen entre páginas
+- **Interfaz colapsable**: Filtros avanzados se expanden solo cuando se usan
+
+#### **2. Barra de Progreso en Tiempo Real** ⏳
+- **Progreso visual**: Barra animada 0-100% durante la carga
+- **Actualización en tiempo real**: Polling cada 2 segundos vía AJAX
+- **Estadísticas en vivo**: Procesados, Exitosos, Fallidos actualizados en tiempo real
+- **Cronómetro integrado**: Tiempo transcurrido del proceso
+- **Auto-reload**: Recarga automática al completar el proceso
+- **Modal flotante**: Overlay que bloquea interacción hasta completar
+
+#### **3. Reporte Detallado de Errores** ⚠️
+- **Tabla de errores**: Información estructurada de cada fallo
+- **Fila exacta**: Número de fila de Excel donde ocurrió el error
+- **Campo específico**: Campo que causó el error
+- **Valor recibido**: Dato que generó el problema
+- **Sugerencias inteligentes**: Recomendaciones específicas para corregir
+- **Color coding**: Errores resaltados visualmente
+- **Exportable**: Información lista para corrección en Excel
+
+#### **4. Apache2 como Reverse Proxy Principal** 🔐
 - **Arquitectura dual-layer**: Apache2 (80/443) → Nginx (8080) → Microservices
 - **SSL/TLS configurado**: Soporte HTTPS con certificados autofirmados
 - **Protocolos modernos**: TLS 1.2 y 1.3, SSLv3/TLS1.0/1.1 deshabilitados
 - **ProxyPass configurado**: Redirección transparente a Nginx
 - **Configuración segura**: Cipher suites modernos, headers de seguridad
-- **Documentación**: Ver `APACHE2_IMPLEMENTATION_SUMMARY.md`
 
-#### **2. Frontend Profesional Modernizado** 🎨
+#### **5. Frontend Profesional Modernizado** 🎨
 - **CSS renovado**: 310 → 770 líneas (+148% de código profesional)
 - **8 animaciones CSS**: fadeIn, scaleUp, pulse, shimmer, float, spin, etc.
 - **Glassmorphism**: Efectos de vidrio esmerilado con backdrop-filter
 - **Gradientes profesionales**: Texto y fondos con gradientes modernos
 - **Tipografía mejorada**: Sistema de jerarquía profesional
 - **Responsive design**: Mobile-first, optimizado para todos los dispositivos
-- **Accesibilidad**: WCAG AA compliant, focus indicators
-- **Documentación**: Ver `FRONTEND_UPGRADE_SUMMARY.md`
 
-#### **3. Seguridad Mejorada** 🔒
-- **Variables de entorno**: SECRET_KEY y configuraciones sensibles en `.env`
-- **CSRF Protection**: CSRF_TRUSTED_ORIGINS configurado
-- **HTTPS por defecto**: Certificados SSL autofirmados incluidos
-- **Headers de seguridad**: X-Frame-Options, X-Content-Type-Options
-- **Sin secretos en código**: Todas las credenciales externalizadas
-
-#### **4. Dashboard Interactivo con Gráficos** 📊
+#### **6. Dashboard Interactivo con Gráficos** 📊
 - **React Dashboard**: Frontend moderno con Vite + Tailwind CSS
 - **Gráficos en tiempo real**: Recharts con AreaChart, LineChart, BarChart
 - **Divisas soportadas**: CLP, COP, PEN (SOL), MXN, EUR, UF
@@ -46,7 +61,7 @@
 - **Auto-refresh**: Actualización automática cada 5 minutos
 - **Comparación de monedas**: Gráficos comparativos interactivos
 
-#### **5. Microservicio de Divisas** 💱
+#### **7. Microservicio de Divisas** 💱
 - **FastAPI Currency Service**: Servicio independiente en puerto 8001
 - **Histórico de tasas**: Almacenamiento en PostgreSQL
 - **UF Chilena**: Integración con API CMF (Comisión para el Mercado Financiero)
@@ -77,6 +92,8 @@
 ### **Core Features**
 - ✅ **CRUD completo** de calificaciones tributarias
 - ✅ **Cargas masivas** desde archivos Excel (hasta 10,000 registros)
+- ✅ **Progreso en tiempo real** con barra de progreso y estadísticas en vivo
+- ✅ **Reporte de errores detallado** con sugerencias de corrección
 - ✅ **Multi-divisa**: USD, CLP, COP, PEN, EUR, MXN, BRL, ARS + UF chilena
 - ✅ **API REST** con autenticación JWT y Swagger documentation
 - ✅ **Procesamiento asíncrono** con Apache Kafka
@@ -85,6 +102,8 @@
 - ✅ **SSL/TLS** con HTTPS configurado
 
 ### **Advanced Features**
+- 🔍 **Búsqueda y filtros avanzados**: Búsqueda rápida, filtros por mercado/divisa/fecha, ordenamiento
+- 📄 **Paginación inteligente**: 10-100 resultados por página con preservación de estado
 - 🔐 **Dual reverse proxy**: Apache2 + Nginx para máxima seguridad
 - 📊 **React Dashboard**: Gráficos interactivos con Recharts
 - 💱 **Currency Service**: Microservicio FastAPI para tasas de cambio
@@ -854,7 +873,14 @@ Para reportar bugs o solicitar features, abrir un issue en GitHub.
 
 ## 🎯 **VERSIONES**
 
-### **v2.0.0** (Diciembre 2024) - CURRENT
+### **v2.1.0** (Diciembre 2024) - CURRENT
+- ✅ Sistema avanzado de búsqueda y filtros
+- ✅ Barra de progreso en tiempo real
+- ✅ Reporte detallado de errores con sugerencias
+- ✅ Paginación inteligente (10-100 resultados)
+- ✅ Ordenamiento dinámico por columnas
+
+### **v2.0.0** (Diciembre 2024)
 - ✅ Apache2 dual-layer reverse proxy
 - ✅ Frontend modernizado con glassmorphism
 - ✅ React Dashboard con gráficos interactivos
@@ -871,4 +897,4 @@ Para reportar bugs o solicitar features, abrir un issue en GitHub.
 
 **Made with ❤️ by DykeByte**
 
-*Sistema empresarial de gestión tributaria - NUAM v2.0.0*
+*Sistema empresarial de gestión tributaria - NUAM v2.1.0*
